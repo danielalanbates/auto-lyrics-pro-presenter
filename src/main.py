@@ -4,6 +4,7 @@ import signal
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from loguru import logger
