@@ -39,3 +39,4 @@ songs/
 
 # Config (may contain secrets)
 config.yaml
+.venv/
