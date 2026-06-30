@@ -1,0 +1,26 @@
+# Auto Lyrics Pro Presenter — dependencies (all permissive / MIT-compatible)
+#
+# Default runtime: faster-whisper STT + stdlib HTTP. No PyTorch, no Apache deps.
+# License note: faster-whisper, loguru, sounddevice, PyYAML = MIT; numpy, scipy,
+# soundfile = BSD. ProPresenter HTTP uses the Python stdlib (urllib), so no
+# third-party HTTP client is required.
+
+# --- Core STT (MIT) ---
+faster-whisper>=1.0.0
+
+# --- Numerics (BSD) ---
+numpy>=1.24.0
+scipy>=1.11.0
+
+# --- Audio capture (MIT / BSD) ---
+sounddevice>=0.4.6
+soundfile>=0.12.1
+
+# --- Utilities (MIT) ---
+pyyaml>=6.0
+loguru>=0.7.2
+
+# --- Optional, only if you want these alternative backends ---
+# openai-whisper>=20231117   # MIT — alternative STT engine (pulls in torch)
+# demucs>=4.0.0              # MIT — AI vocal isolation (pulls in torch); the
+#                           #       default falls back to a scipy band-pass filter
