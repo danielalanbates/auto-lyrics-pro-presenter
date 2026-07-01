@@ -1,8 +1,15 @@
-"""Lyric engine — transcribes vocals and matches against loaded lyrics."""
+"""Lyric engine — transcribes vocals and matches against slide-grouped lyrics.
+
+Slides are groups of lyric lines (as they appear in ProPresenter). The engine
+tracks the current slide, matches live transcription against a window of
+nearby slides, and emits SlideSuggestions that the app either auto-fires or
+surfaces for operator confirmation.
+"""
 
 import re
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from difflib import SequenceMatcher
 from typing import Optional
 
 import numpy as np
@@ -12,165 +19,206 @@ from .config import MatchingConfig, WhisperConfig
 
 
 @dataclass
-class LyricLine:
-    """A single line of lyrics with timing metadata."""
-    text: str
-    line_number: int
-    matched: bool = False
-    match_confidence: float = 0.0
-    matched_at: Optional[float] = None  # Timestamp when matched
+class Slide:
+    """A ProPresenter slide: one or more lyric lines shown together."""
+    index: int
+    lines: list[str]
+    text: str = ""  # normalized full text, filled in load_song
+
+    @property
+    def display(self) -> str:
+        return " / ".join(self.lines)
+
+
+@dataclass
+class SlideSuggestion:
+    """A proposed slide move."""
+    index: int
+    confidence: float
+    reason: str  # e.g. "next-slide match", "jump +2", "repeat section"
 
 
 @dataclass
 class MatchResult:
     """Result of matching transcribed text against lyrics."""
-    matched_line: Optional[LyricLine] = None
+    matched_line: Optional[Slide] = None
     confidence: float = 0.0
-    matched_words: int = 0
-    total_words: int = 0
+    suggestion: Optional[SlideSuggestion] = None
 
 
 class LyricEngine:
-    """Transcribes live vocals and matches against loaded song lyrics."""
+    """Transcribes live vocals and matches against slide-grouped lyrics."""
 
     def __init__(self, whisper_config: WhisperConfig, matching_config: MatchingConfig):
         self.whisper_config = whisper_config
         self.matching_config = matching_config
         self._model = None
-        self._current_song_lines: list[LyricLine] = []
-        self._current_line_index: int = 0
-        self._last_match_time: float = 0
-
+        self._slides: list[Slide] = []
+        self._current_slide: int = -1  # -1 = song not started
+        self._last_move_time: float = 0.0
         self._load_whisper()
 
+    # ------------------------------------------------------------------ setup
+
     def _load_whisper(self):
-        """Load Whisper model."""
+        """Load faster-whisper model (MIT-licensed CTranslate2 backend)."""
         try:
-            import whisper
-            self._model = whisper.load_model(self.whisper_config.model_size)
-            logger.info(f"Whisper model loaded: {self.whisper_config.model_size}")
+            from faster_whisper import WhisperModel
+            self._model = WhisperModel(
+                self.whisper_config.model_size,
+                device="cpu",
+                compute_type=self.whisper_config.compute_type,
+            )
+            logger.info(f"faster-whisper model loaded: {self.whisper_config.model_size}")
         except Exception as e:
-            logger.error(f"Failed to load Whisper: {e}")
+            logger.error(f"Failed to load faster-whisper: {e}")
 
     def load_song(self, lyrics_text: str):
-        """Load a song's lyrics for matching.
-        
-        Args:
-            lyrics_text: Full lyrics text, one line per line
-        """
-        self._current_song_lines = [
-            LyricLine(text=line.strip(), line_number=i)
-            for i, line in enumerate(lyrics_text.split("\n"))
-            if line.strip()
-        ]
-        self._current_line_index = 0
-        logger.info(f"Loaded song with {len(self._current_song_lines)} lyric lines")
+        """Load a song. Blank lines separate slides; each slide holds its lines."""
+        self._slides = []
+        block: list[str] = []
+        for raw in lyrics_text.split("\n"):
+            line = raw.strip()
+            if line:
+                block.append(line)
+            elif block:
+                self._add_slide(block)
+                block = []
+        if block:
+            self._add_slide(block)
+        self._current_slide = -1
+        self._last_move_time = 0.0
+        logger.info(f"Loaded song with {len(self._slides)} slides")
+
+    def _add_slide(self, lines: list[str]):
+        s = Slide(index=len(self._slides), lines=list(lines))
+        s.text = self._normalize(" ".join(lines))
+        self._slides.append(s)
+
+    # ------------------------------------------------------------- transcribe
 
     def transcribe(self, audio: np.ndarray, sample_rate: int) -> str:
-        """Transcribe audio using Whisper.
-        
-        Args:
-            audio: Audio array (mono, 16kHz)
-            sample_rate: Sample rate
-            
-        Returns:
-            Transcribed text
-        """
+        """Transcribe audio (mono float32 @16kHz) with faster-whisper."""
         if self._model is None:
             return ""
-
         try:
-            result = self._model.transcribe(
+            segments, _ = self._model.transcribe(
                 audio,
                 language=self.whisper_config.language,
-                temperature=self.whisper_config.temperature,
                 beam_size=self.whisper_config.beam_size,
-                fp16=self.whisper_config.compute_type == "float16",
+                temperature=self.whisper_config.temperature,
+                vad_filter=False,  # VAD drops sung vocals over instruments
+                condition_on_previous_text=False,
             )
-            return result.get("text", "").strip()
+            return " ".join(s.text for s in segments).strip()
         except Exception as e:
             logger.error(f"Transcription failed: {e}")
             return ""
 
+    # ---------------------------------------------------------------- matching
+
     def match_lyrics(self, transcribed_text: str) -> MatchResult:
-        """Match transcribed text against the next expected lyric line.
-        
-        Uses fuzzy word matching to handle transcription errors.
-        
-        Args:
-            transcribed_text: Text from Whisper
-            
-        Returns:
-            MatchResult with confidence and matched line
+        """Match transcription against a window of candidate slides.
+
+        Considers the current slide (singer still on it — no move), the next
+        slides within lookahead, and small backward jumps (repeats).
         """
-        if not self._current_song_lines or self._current_line_index >= len(self._current_song_lines):
+        if not self._slides:
             return MatchResult()
 
-        # Check debounce
+        norm = self._normalize(transcribed_text)
+        if len(norm.split()) < self.matching_config.min_words_match:
+            return MatchResult()
+
         now = time.time()
-        if now - self._last_match_time < self.matching_config.debounce_seconds:
-            return MatchResult()
+        cur = self._current_slide
 
-        expected_line = self._current_song_lines[self._current_line_index]
-        result = self._fuzzy_match(transcribed_text, expected_line.text)
+        best_idx, best_conf = -1, 0.0
+        for idx in self._candidate_indices(cur):
+            conf = self._score(norm, self._slides[idx])
+            # Slight bias toward the immediate next slide — the common case.
+            if idx == cur + 1:
+                conf += self.matching_config.next_slide_bias
+            if conf > best_conf:
+                best_idx, best_conf = idx, conf
 
-        if result.confidence >= self.matching_config.confidence_threshold:
-            expected_line.matched = True
-            expected_line.match_confidence = result.confidence
-            expected_line.matched_at = now
-            self._current_line_index += 1
-            self._last_match_time = now
-            logger.info(
-                f"Matched line {expected_line.line_number}: '{expected_line.text[:50]}...' "
-                f"(confidence: {result.confidence:.2f})"
-            )
+        if best_idx < 0 or best_conf < self.matching_config.confidence_threshold:
+            return MatchResult(confidence=best_conf)
 
+        slide = self._slides[best_idx]
+        result = MatchResult(matched_line=slide, confidence=min(best_conf, 1.0))
+
+        if best_idx == cur:
+            return result  # already showing the right slide
+
+        if now - self._last_move_time < self.matching_config.debounce_seconds:
+            return result  # matched, but too soon to move again
+
+        step = best_idx - cur
+        if step == 1 or cur < 0:
+            reason = "next-slide match"
+        elif step > 1:
+            reason = f"jump +{step}"
+        else:
+            reason = f"repeat (back {-step})"
+        result.suggestion = SlideSuggestion(index=best_idx, confidence=result.confidence, reason=reason)
         return result
 
-    def _fuzzy_match(self, transcribed: str, expected: str) -> MatchResult:
-        """Fuzzy match transcribed text against expected lyrics.
-        
-        Returns confidence based on word overlap and sequence similarity.
-        """
-        transcribed_words = set(self._normalize(transcribed).split())
-        expected_words = self._normalize(expected).split()
+    def _candidate_indices(self, cur: int) -> list[int]:
+        m = self.matching_config
+        if cur < 0:  # song not started: allow entry anywhere in the first window
+            return list(range(0, min(len(self._slides), m.lookahead_slides)))
+        lo = max(0, cur - m.lookbehind_slides)
+        hi = min(len(self._slides), cur + 1 + m.lookahead_slides)
+        return list(range(lo, hi))
 
-        if not expected_words:
-            return MatchResult(confidence=0.0)
+    def _score(self, norm_transcribed: str, slide: Slide) -> float:
+        """Confidence that the transcription contains the slide's lyrics."""
+        t_words = norm_transcribed.split()
+        s_words = slide.text.split()
+        if not s_words or not t_words:
+            return 0.0
 
-        matched = sum(1 for w in expected_words if w in transcribed_words)
-        total = len(expected_words)
-        word_ratio = matched / total
+        t_set = set(t_words)
+        word_ratio = sum(1 for w in s_words if w in t_set) / len(s_words)
 
-        # Also check sequence similarity for short phrases
-        from difflib import SequenceMatcher
-        seq_ratio = SequenceMatcher(None, self._normalize(transcribed), self._normalize(expected)).ratio()
+        seq_ratio = SequenceMatcher(None, norm_transcribed, slide.text).ratio()
+        # The rolling buffer often holds the previous slide too — also score the tail.
+        tail = " ".join(t_words[-max(len(s_words) + 4, 8):])
+        seq_tail = SequenceMatcher(None, tail, slide.text).ratio()
 
-        # Combine: word overlap matters more, but sequence helps
-        confidence = (word_ratio * 0.7) + (seq_ratio * 0.3)
+        return word_ratio * 0.6 + max(seq_ratio, seq_tail) * 0.4
 
-        return MatchResult(
-            confidence=confidence,
-            matched_words=matched,
-            total_words=total,
-        )
+    # ------------------------------------------------------------------ state
+
+    def confirm_move(self, index: int):
+        """Record that a suggested move was executed (auto or by operator)."""
+        if 0 <= index < len(self._slides):
+            self._current_slide = index
+            self._last_move_time = time.time()
+            logger.debug(f"Now on slide {index}: '{self._slides[index].display[:60]}'")
+
+    def get_current_slide(self) -> int:
+        return self._current_slide
+
+    def get_current_line(self) -> Optional[Slide]:
+        """The next expected slide (for status display)."""
+        nxt = self._current_slide + 1
+        if 0 <= nxt < len(self._slides):
+            return self._slides[nxt]
+        return None
+
+    def get_slides(self) -> list[Slide]:
+        return self._slides
+
+    def get_progress(self) -> float:
+        if not self._slides:
+            return 0.0
+        return max(0, self._current_slide + 1) / len(self._slides)
 
     @staticmethod
     def _normalize(text: str) -> str:
-        """Normalize text for comparison."""
         text = text.lower().strip()
-        text = re.sub(r"[^\w\s]", "", text)  # Remove punctuation
-        text = re.sub(r"\s+", " ", text)  # Collapse whitespace
+        text = re.sub(r"[^\w\s]", "", text)
+        text = re.sub(r"\s+", " ", text)
         return text
-
-    def get_current_line(self) -> Optional[LyricLine]:
-        """Get the next expected lyric line."""
-        if self._current_line_index < len(self._current_song_lines):
-            return self._current_song_lines[self._current_line_index]
-        return None
-
-    def get_progress(self) -> float:
-        """Get song progress (0.0 to 1.0)."""
-        if not self._current_song_lines:
-            return 0.0
-        return self._current_line_index / len(self._current_song_lines)

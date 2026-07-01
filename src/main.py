@@ -26,7 +26,8 @@ class AutoLyricsApp:
 
         # Initialize components
         self.song_loader = SongLoader(config.songs_directory)
-        self.vocal_isolator = VocalIsolator(backend="demucs")
+        # Spectral gating: real-time-safe on CPU (demucs is far too slow live).
+        self.vocal_isolator = VocalIsolator(backend="spectral")
         self.lyric_engine = LyricEngine(config.whisper, config.matching)
         self.pp_bridge = ProPresenterBridge(config.propresenter)
         self.audio_capture = AudioCapture(config.audio, callback=self._on_audio)
@@ -60,7 +61,7 @@ class AutoLyricsApp:
         # Keep main thread alive
         try:
             while self._running:
-                time.sleep(0.5)
+                time.sleep(5.0)
                 self._print_status()
         except KeyboardInterrupt:
             self._handle_shutdown(None, None)
@@ -82,20 +83,32 @@ class AutoLyricsApp:
 
         # Step 3: Match against lyrics
         result = self.lyric_engine.match_lyrics(text)
-        if result.matched_line and result.confidence >= self.config.matching.confidence_threshold:
+        suggestion = result.suggestion
+        if not suggestion:
+            return
+
+        # Step 4: Fire (or suggest) the slide move
+        if self.config.matching.auto_fire:
             logger.info(
-                f"✅ Matched: '{result.matched_line.text}' "
-                f"(confidence: {result.confidence:.2f})"
+                f"AUTO → slide {suggestion.index} "
+                f"(conf {suggestion.confidence:.2f}) [{suggestion.reason}]"
             )
-            # Step 4: Advance ProPresenter
-            self.pp_bridge.advance_slide("next")
+            self.pp_bridge.go_to_slide(suggestion.index)
+            self.lyric_engine.confirm_move(suggestion.index)
+        else:
+            # Suggest-and-confirm: surface it; an operator confirms (UI/hotkey).
+            logger.info(
+                f"SUGGEST → slide {suggestion.index} "
+                f"(conf {suggestion.confidence:.2f}) [{suggestion.reason}] "
+                f"'{result.matched_line.display[:60]}'"
+            )
 
     def _print_status(self):
         """Print periodic status."""
         progress = self.lyric_engine.get_progress()
         current = self.lyric_engine.get_current_line()
         if current:
-            logger.info(f"Progress: {progress:.0%} | Next: '{current.text[:60]}...'")
+            logger.info(f"Progress: {progress:.0%} | Next: '{current.display[:60]}'")
 
     def _handle_shutdown(self, signum, frame):
         """Handle graceful shutdown."""

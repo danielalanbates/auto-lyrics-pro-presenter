@@ -18,10 +18,10 @@ class AudioConfig:
 @dataclass
 class WhisperConfig:
     """Whisper transcription settings."""
-    model_size: str = "base"  # tiny, base, small, medium, large
+    model_size: str = "small.en"  # faster-whisper: tiny.en, base.en, small.en, distil-small.en...
     language: str = "en"
-    compute_type: str = "float16"  # float16 for M1, int8 for speed
-    beam_size: int = 5
+    compute_type: str = "int8"  # int8 keeps small.en real-time on CPU
+    beam_size: int = 1
     temperature: float = 0.0
 
 
@@ -39,9 +39,13 @@ class ProPresenterConfig:
 @dataclass
 class MatchingConfig:
     """Lyric matching settings."""
-    confidence_threshold: float = 0.75  # Minimum confidence to trigger slide change
-    min_words_match: int = 3  # Minimum words to match before advancing
+    confidence_threshold: float = 0.55  # Minimum confidence to trigger slide change
+    min_words_match: int = 3  # Minimum transcribed words before matching
     debounce_seconds: float = 2.0  # Minimum time between slide advances
+    auto_fire: bool = True  # Fire slide changes automatically vs. suggest-and-confirm
+    lookahead_slides: int = 3  # How many slides ahead to consider
+    lookbehind_slides: int = 1  # Backward jumps allowed (repeats)
+    next_slide_bias: float = 0.08  # Score bonus for the expected next slide
 
 
 @dataclass

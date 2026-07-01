@@ -84,6 +84,11 @@ class AudioCapture:
         while self._running:
             try:
                 chunk = self._audio_queue.get(timeout=0.1)
+                # If processing fell behind, fold queued chunks in now so we
+                # always analyze the freshest audio instead of a backlog.
+                while not self._audio_queue.empty():
+                    chunk = np.concatenate([chunk, self._audio_queue.get_nowait()])
+                chunk = chunk[-len(buffer):]
                 # Roll buffer and add new chunk
                 chunk_len = len(chunk)
                 buffer[:-chunk_len] = buffer[chunk_len:]

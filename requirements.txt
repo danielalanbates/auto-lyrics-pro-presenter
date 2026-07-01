@@ -1,15 +1,11 @@
-# Core
-openai-whisper>=20231117
-torch>=2.1.0
+# Core transcription (MIT-licensed, CTranslate2 backend — real-time on CPU)
+faster-whisper>=1.0.0
 numpy>=1.24.0
 
 # Audio capture
 sounddevice>=0.4.6
 soundfile>=0.12.1
 scipy>=1.11.0
-
-# Vocal isolation
-demucs>=4.0.0
 
 # ProPresenter integration
 python-osc>=1.8.3
@@ -18,3 +14,7 @@ requests>=2.31.0
 # Utilities
 pyyaml>=6.0
 loguru>=0.7.2
+
+# Optional: high-quality offline vocal isolation (too slow for live use on CPU)
+# demucs>=4.0.0
+# torch>=2.1.0
