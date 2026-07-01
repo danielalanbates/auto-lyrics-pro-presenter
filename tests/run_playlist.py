@@ -12,17 +12,18 @@ from loguru import logger
 
 from tests.harness import PLAYLIST_DIR, build_reference, live_test, slug
 
+# Live recordings only, per operator request — shortest ten from "My Praise".
 SONGS = [
-    "Act Justly, Love Mercy, Walk Humbly",
-    "Coming Back",
     "For All My Days (Live at Camp)",
-    "Sparrows",
-    "Our God Is Coming Back",
-    "This Won't Take My Praise",
-    "Know You Will",
-    "Sound Mind",
-    "Time and Time Again",
-    "What My Father's Like",
+    "The God You Are (Live)",
+    "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
+    "Glory, Honor, Power (Live)",
+    "First Love (Live)",
+    "Who You Say I Am (Live)",
+    "Holy Ground (feat. Melodie Malone) [Live]",
+    "One (Live At Church)",
+    "Know (Be Still) [Live in Anaheim, California]",
+    "Freedom (feat. Kim Walker-Smith) [Live]",
 ]
 
 RESULTS = PLAYLIST_DIR / "results.json"

@@ -49,8 +49,18 @@ def osa(script: str) -> str:
     return r.stdout.strip()
 
 
+def force_speakers():
+    """Pin audio to the built-in speakers (Jump Desktop re-claims routing)."""
+    subprocess.run([str(REPO / "tools" / "setout"), "MacBook Pro Speakers"], capture_output=True)
+    try:
+        osa('tell application "Music" to set current AirPlay devices to (AirPlay device "Computer")')
+    except RuntimeError:
+        pass
+
+
 def music_play(track: str) -> float:
     """Start the track from the beginning; return its duration in seconds."""
+    force_speakers()
     # Moderate volume — enough for the mic to hear, easy on the speakers.
     osa('set volume output volume 40')
     osa('tell application "Music" to set sound volume to 70')
@@ -58,7 +68,15 @@ def music_play(track: str) -> float:
         f'tell application "Music" to get duration of track "{track}" of playlist "{MUSIC_PLAYLIST}"'
     ))
     osa(f'tell application "Music" to play track "{track}" of playlist "{MUSIC_PLAYLIST}"')
-    osa('tell application "Music" to set player position to 0')
+    # Wait for streaming playback to actually start before recording.
+    for _ in range(15):
+        if osa('tell application "Music" to get player state as string') == "playing":
+            break
+        time.sleep(1)
+    try:
+        osa('tell application "Music" to set player position to 0')
+    except RuntimeError:
+        pass  # some streaming states reject seeking; track just started anyway
     return dur
 
 
@@ -69,9 +87,19 @@ def music_stop():
 def record(duration: float) -> np.ndarray:
     """Record the mic for `duration` seconds while the track plays."""
     import sounddevice as sd
+    import threading
     frames = int(duration * SAMPLE_RATE)
     rec = sd.rec(frames, samplerate=SAMPLE_RATE, channels=1, dtype="float32", device=0)
+    done = threading.Event()
+
+    def enforce():  # keep audio on the speakers for the whole recording
+        while not done.wait(5):
+            force_speakers()
+
+    t = threading.Thread(target=enforce, daemon=True)
+    t.start()
     sd.wait()
+    done.set()
     return rec[:, 0]
 
 
@@ -177,12 +205,22 @@ def live_test(track: str) -> dict:
     logger.info(f"LIVE TEST '{track}' — {n_slides} slides, {dur:.0f}s")
     capture.start()
     t0 = time.time()
+    not_playing = 0
     try:
         while time.time() - t0 < dur + 3:
             time.sleep(2)
+            force_speakers()
             state = osa('tell application "Music" to get player state as string')
-            if state != "playing":
-                break
+            if state == "playing":
+                not_playing = 0
+            else:
+                not_playing += 1
+                # Streaming tracks report stopped/buffering transiently; only
+                # give up after repeated checks, and try to resume once.
+                if not_playing == 2 and time.time() - t0 < dur - 5:
+                    osa('tell application "Music" to play')  # resume, don't restart
+                if not_playing >= 5:
+                    break
     finally:
         capture.stop()
         music_stop()
