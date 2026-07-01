@@ -12,7 +12,7 @@ class AudioConfig:
     device_index: Optional[int] = None  # None = default input
     sample_rate: int = 16000  # Whisper expects 16kHz
     chunk_duration: float = 3.0  # seconds of audio to process at once
-    buffer_size: int = 10  # seconds of audio to keep in buffer
+    buffer_size: int = 12  # seconds of audio to keep in buffer (≥ one slide span)
 
 
 @dataclass
@@ -41,10 +41,12 @@ class MatchingConfig:
     """Lyric matching settings."""
     confidence_threshold: float = 0.55  # Minimum confidence to trigger slide change
     min_words_match: int = 3  # Minimum transcribed words before matching
-    debounce_seconds: float = 2.0  # Minimum time between slide advances
+    debounce_seconds: float = 4.0  # Minimum time between slide advances
     auto_fire: bool = True  # Fire slide changes automatically vs. suggest-and-confirm
     lookahead_slides: int = 3  # How many slides ahead to consider
-    lookbehind_slides: int = 1  # Backward jumps allowed (repeats)
+    # Forward-only by default: slide decks built in performance order encode
+    # repeats as sequential slides, and back-jumps cause chorus oscillation.
+    lookbehind_slides: int = 0
     next_slide_bias: float = 0.08  # Score bonus for the expected next slide
 
 

@@ -49,6 +49,15 @@ def osa(script: str) -> str:
     return r.stdout.strip()
 
 
+def mic_device() -> int:
+    """Index of the built-in mic — never a Bluetooth/virtual device."""
+    import sounddevice as sd
+    for i, d in enumerate(sd.query_devices()):
+        if "MacBook Pro Microphone" in d["name"] and d["max_input_channels"] > 0:
+            return i
+    raise RuntimeError("MacBook Pro Microphone not found")
+
+
 def force_speakers():
     """Pin audio to the built-in speakers (Jump Desktop re-claims routing)."""
     subprocess.run([str(REPO / "tools" / "setout"), "MacBook Pro Speakers"], capture_output=True)
@@ -89,7 +98,7 @@ def record(duration: float) -> np.ndarray:
     import sounddevice as sd
     import threading
     frames = int(duration * SAMPLE_RATE)
-    rec = sd.rec(frames, samplerate=SAMPLE_RATE, channels=1, dtype="float32", device=0)
+    rec = sd.rec(frames, samplerate=SAMPLE_RATE, channels=1, dtype="float32", device=mic_device())
     done = threading.Event()
 
     def enforce():  # keep audio on the speakers for the whole recording
@@ -143,7 +152,7 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
             cur_start = seg.start
         cur.append(text)
         cur_words += len(text.split())
-        if (seg.end - cur_start) >= 12 or cur_words >= 18:
+        if (seg.end - cur_start) >= 8 or cur_words >= 12:
             slides.append(cur)
             cur, cur_start, cur_words = [], None, 0
     if cur:
@@ -184,6 +193,7 @@ def live_test(track: str) -> dict:
         raise FileNotFoundError(f"No reference lyrics for '{track}' — run build first")
 
     config = AppConfig()
+    config.audio.device_index = mic_device()
     engine = LyricEngine(config.whisper, config.matching)
     engine.load_song(lyrics_path.read_text())
     n_slides = len(engine.get_slides())
