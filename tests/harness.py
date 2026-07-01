@@ -51,7 +51,9 @@ def osa(script: str) -> str:
 
 def music_play(track: str) -> float:
     """Start the track from the beginning; return its duration in seconds."""
-    osa('set volume output volume 80')
+    # Moderate volume — enough for the mic to hear, easy on the speakers.
+    osa('set volume output volume 40')
+    osa('tell application "Music" to set sound volume to 70')
     dur = float(osa(
         f'tell application "Music" to get duration of track "{track}" of playlist "{MUSIC_PLAYLIST}"'
     ))
