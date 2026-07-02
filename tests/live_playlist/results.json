@@ -56,10 +56,15 @@
   },
   "abundantly-more-feat-clay-finnesand-live-at-decatur-city": {
     "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
-    "slides": 3,
+    "slides": 16,
     "fired": [
       0,
-      2
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
     ],
     "perfect": false
   },

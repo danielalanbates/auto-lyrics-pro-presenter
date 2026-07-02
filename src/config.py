@@ -49,6 +49,9 @@ class MatchingConfig:
     lookbehind_slides: int = 0
     next_slide_bias: float = 0.08  # Score bonus for the expected next slide
     jump_margin: float = 0.12  # Extra confidence required to jump 2+ slides
+    soft_threshold: float = 0.42  # Sub-threshold matches can fire after repeated hits
+    soft_hits_step: int = 2  # Consecutive soft hits to fire the next slide
+    soft_hits_jump: int = 3  # Consecutive soft hits to fire a 2+ jump
 
 
 @dataclass

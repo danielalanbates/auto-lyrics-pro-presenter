@@ -56,6 +56,8 @@ class LyricEngine:
         self._slides: list[Slide] = []
         self._current_slide: int = -1  # -1 = song not started
         self._last_move_time: float = 0.0
+        self._soft_idx: int = -1  # candidate accumulating sub-threshold hits
+        self._soft_hits: int = 0
         self._load_whisper()
 
     # ------------------------------------------------------------------ setup
@@ -152,11 +154,29 @@ class LyricEngine:
             if conf > best_conf:
                 best_idx, best_conf = idx, conf
 
-        threshold = self.matching_config.confidence_threshold
+        m = self.matching_config
+        threshold = m.confidence_threshold
         if best_idx > cur + 1 and cur >= 0:
-            threshold += self.matching_config.jump_margin
+            threshold += m.jump_margin
+
+        if best_idx >= 0 and best_conf < threshold and best_conf >= m.soft_threshold:
+            # Sub-threshold but plausible: fire anyway if the same candidate
+            # keeps winning consecutive windows (noisy sections stay matched).
+            if best_idx == self._soft_idx:
+                self._soft_hits += 1
+            else:
+                self._soft_idx, self._soft_hits = best_idx, 1
+            needed = m.soft_hits_step if best_idx <= cur + 1 else m.soft_hits_jump
+            if self._soft_hits >= needed:
+                threshold = best_conf  # accept
+        elif best_conf >= threshold:
+            pass
+        else:
+            self._soft_idx, self._soft_hits = -1, 0
+
         if best_idx < 0 or best_conf < threshold:
             return MatchResult(confidence=best_conf)
+        self._soft_idx, self._soft_hits = -1, 0
 
         slide = self._slides[best_idx]
         result = MatchResult(matched_line=slide, confidence=min(best_conf, 1.0))

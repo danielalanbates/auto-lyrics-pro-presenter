@@ -135,36 +135,31 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
         sf.write(wav_path, audio, SAMPLE_RATE)
         logger.info(f"Saved recording (RMS {float(np.sqrt((audio**2).mean())):.4f})")
 
-    logger.info("Transcribing reference (beam 5)...")
-    model = WhisperModel("small.en", device="cpu", compute_type="int8")
-    segments, _ = model.transcribe(audio, language="en", beam_size=5, vad_filter=False)
-
-    # Group segments into slides: break at ~12s of accumulated span or 18 words.
+    # Transcribe with the SAME windowed pipeline the live engine uses —
+    # consistency between passes matters more than absolute accuracy.
+    logger.info("Transcribing reference (live-style windows)...")
+    config = AppConfig()
+    engine = LyricEngine(config.whisper, config.matching)
+    win = 8 * SAMPLE_RATE
     slides: list[list[str]] = []
-    cur: list[str] = []
-    cur_start = None
-    cur_words = 0
-    for seg in segments:
-        text = seg.text.strip()
-        if not text or not re.search(r"\w", text):
-            continue
-        # Drop hallucination-prone segments (crowd noise, instrumentals) —
-        # they won't reproduce in a live pass and strand the matcher.
-        # (no_speech_prob is unreliable on music — sung lyrics score 0.6-0.95)
-        if getattr(seg, "avg_logprob", 0) < -1.0:
-            continue
-        if cur_start is None:
-            cur_start = seg.start
-        cur.append(text)
-        cur_words += len(text.split())
-        if (seg.end - cur_start) >= 8 or cur_words >= 12:
-            slides.append(cur)
-            cur, cur_start, cur_words = [], None, 0
-    if cur:
-        slides.append(cur)
+    for i in range(0, len(audio) - win // 2, win):
+        text = engine.transcribe(audio[i:i + win], SAMPLE_RATE).strip()
+        if text and re.search(r"\w", text) and len(text.split()) >= 3:
+            slides.append([text])
 
     # Drop slides with fewer than 4 words (noise / crowd / instrumental)
     slides = [sl for sl in slides if sum(len(l.split()) for l in sl) >= 4]
+
+    # Self-consistency pruning: simulate a live pass over this same recording
+    # and drop slides that don't fire — they're transcription artifacts that
+    # will never match live. Repeat until the simulation is a perfect pass.
+    for round_ in range(4):
+        lyrics = "\n\n".join("\n".join(sl) for sl in slides)
+        fired = simulate(lyrics, audio)
+        logger.info(f"self-check round {round_}: fired {len(fired)}/{len(slides)}")
+        if fired == list(range(len(slides))):
+            break
+        slides = [slides[i] for i in fired] or slides[:1]
 
     lyrics_path = PLAYLIST_DIR / f"{s}.txt"
     lyrics_path.write_text("\n\n".join("\n".join(sl) for sl in slides) + "\n")
@@ -175,6 +170,23 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
     manifest["songs"].append({"track": track, "slug": s, "duration": dur, "slides": len(slides)})
     MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n")
     return lyrics_path
+
+
+def simulate(lyrics: str, audio: np.ndarray) -> list[int]:
+    """Offline replica of the live pass: 12s window, 3s hop. Returns fired slides."""
+    config = AppConfig()
+    engine = LyricEngine(config.whisper, config.matching)
+    engine.load_song(lyrics)
+    fired: list[int] = []
+    sr = SAMPLE_RATE
+    for start in range(0, int(len(audio) / sr) - 2, 3):
+        seg = audio[max(0, (start - 9)) * sr:(start + 3) * sr]
+        r = engine.match_lyrics(engine.transcribe(seg, sr))
+        if r.suggestion:
+            engine.confirm_move(r.suggestion.index)
+            engine._last_move_time = 0  # sim time ≠ wall time; skip debounce
+            fired.append(r.suggestion.index)
+    return fired
 
 
 # ---------------------------------------------------------------- pass B
@@ -209,6 +221,7 @@ def live_test(track: str) -> dict:
         if not text:
             return
         result = engine.match_lyrics(text)
+        logger.debug(f"heard (conf {result.confidence:.2f}, cur {engine.get_current_slide()}): {text[-120:]}")
         sug = result.suggestion
         if sug and config.matching.auto_fire:
             logger.info(f"AUTO → slide {sug.index} (conf {sug.confidence:.2f}) [{sug.reason}]")
