@@ -30,10 +30,12 @@ class ProPresenterConfig:
     """ProPresenter connection settings."""
     host: str = "127.0.0.1"
     osc_port: int = 53000  # Default ProPresenter OSC port
-    http_port: int = 53001  # Default ProPresenter HTTP API port
+    # PP 7/21 picks an ephemeral API port each launch; the bridge discovers
+    # the real one via lsof when this default is unreachable.
+    http_port: int = 53001
     password: Optional[str] = None
-    use_osc: bool = True
-    use_http: bool = False
+    use_osc: bool = False  # OSC is fallback-only: fire-and-forget, no read-back
+    use_http: bool = True
 
 
 @dataclass

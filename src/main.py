@@ -40,10 +40,16 @@ class AutoLyricsApp:
         Args:
             song_name: Optional song name to load lyrics for
         """
+        connected = self.pp_bridge.connect()
+        if not connected:
+            logger.warning("ProPresenter unreachable — running in suggest-only mode")
+
         if song_name:
             lyrics = self.song_loader.load_song_by_name(song_name)
             if lyrics:
                 self.lyric_engine.load_song(lyrics)
+                if connected:
+                    self._prepare_deck(song_name, lyrics)
             else:
                 logger.warning(f"Could not load song '{song_name}', running without lyrics")
 
@@ -65,6 +71,25 @@ class AutoLyricsApp:
                 self._print_status()
         except KeyboardInterrupt:
             self._handle_shutdown(None, None)
+
+    def _prepare_deck(self, song_name: str, lyrics: str):
+        """Export the song as a native PP deck and target it for triggers."""
+        from .pro_export import export_song
+
+        deck_name = f"AutoLyrics - {song_name}"
+        uuid = self.pp_bridge.find_presentation(deck_name)
+        if uuid is None:
+            export_song(deck_name, lyrics)
+            for _ in range(30):  # PP watches the library dir; wait for the scan
+                time.sleep(1)
+                uuid = self.pp_bridge.find_presentation(deck_name)
+                if uuid:
+                    break
+        if uuid:
+            self.pp_bridge.focus_presentation(uuid)
+            logger.info(f"Targeting PP deck '{deck_name}' ({uuid})")
+        else:
+            logger.warning(f"PP never indexed '{deck_name}'; triggering active presentation")
 
     def _on_audio(self, audio: np.ndarray, sample_rate: int):
         """Called when new audio buffer is available."""

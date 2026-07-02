@@ -42,9 +42,37 @@ class ProPresenterBridge:
             logger.error(f"PP API {path}: {e}")
         return None
 
+    @staticmethod
+    def discover_port() -> Optional[int]:
+        """Find ProPresenter's Network API port from its listening sockets.
+
+        PP 7/21 picks an ephemeral port each launch, so a static config value
+        goes stale; discovery from lsof is the reliable path on the same Mac.
+        """
+        import re
+        import subprocess
+        r = subprocess.run(
+            ["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-a", "-c", "ProPresenter"],
+            capture_output=True, text=True,
+        )
+        for port in sorted({int(m) for m in re.findall(r":(\d+) \(LISTEN\)", r.stdout)}):
+            try:
+                resp = requests.get(f"http://127.0.0.1:{port}/version", timeout=2)
+                if resp.ok and "api_version" in resp.text:
+                    return port
+            except requests.RequestException:
+                continue
+        return None
+
     def connect(self) -> bool:
         """Confirm the API is reachable; log the ProPresenter version."""
         info = self._get("version")
+        if info is None and self.config.host in ("127.0.0.1", "localhost"):
+            port = self.discover_port()
+            if port:
+                logger.info(f"Discovered ProPresenter API on port {port}")
+                self.config.http_port = port
+                info = self._get("version")
         if info is not None:
             logger.info(
                 f"ProPresenter API OK: {info.get('name', '?')} "
