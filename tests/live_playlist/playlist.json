@@ -13,12 +13,6 @@
       "slides": 24
     },
     {
-      "track": "Glory, Honor, Power (Live)",
-      "slug": "glory-honor-power-live",
-      "duration": 307.135009765625,
-      "slides": 23
-    },
-    {
       "track": "First Love (Live)",
       "slug": "first-love-live",
       "duration": 325.0,
@@ -59,6 +53,12 @@
       "slug": "abundantly-more-feat-clay-finnesand-live-at-decatur-city",
       "duration": 268.5639375,
       "slides": 15
+    },
+    {
+      "track": "Glory, Honor, Power (Live)",
+      "slug": "glory-honor-power-live",
+      "duration": 307.135,
+      "slides": 24
     }
   ]
 }

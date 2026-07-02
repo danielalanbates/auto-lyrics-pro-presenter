@@ -153,13 +153,23 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
     # Self-consistency pruning: simulate a live pass over this same recording
     # and drop slides that don't fire — they're transcription artifacts that
     # will never match live. Repeat until the simulation is a perfect pass.
-    for round_ in range(4):
+    # Prune against multiple window alignments: live capture starts at an
+    # arbitrary phase, so a slide must fire at every offset to be trusted.
+    for round_ in range(6):
         lyrics = "\n\n".join("\n".join(sl) for sl in slides)
-        fired = simulate(lyrics, audio)
-        logger.info(f"self-check round {round_}: fired {len(fired)}/{len(slides)}")
-        if fired == list(range(len(slides))):
+        fired_sets = [simulate(lyrics, audio, off) for off in (0.0, 1.5)]
+        want = list(range(len(slides)))
+        logger.info(
+            f"self-check round {round_}: " +
+            ", ".join(f"off{o}: {len(f)}/{len(slides)}" for o, f in zip((0.0, 1.5), fired_sets))
+        )
+        if all(f == want for f in fired_sets):
             break
-        slides = [slides[i] for i in fired] or slides[:1]
+        # Keep slides that fired in order at EVERY offset
+        common = set(fired_sets[0])
+        for f in fired_sets[1:]:
+            common &= set(f)
+        slides = [slides[i] for i in sorted(common)] or slides[:1]
 
     lyrics_path = PLAYLIST_DIR / f"{s}.txt"
     lyrics_path.write_text("\n\n".join("\n".join(sl) for sl in slides) + "\n")
@@ -172,20 +182,27 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
     return lyrics_path
 
 
-def simulate(lyrics: str, audio: np.ndarray) -> list[int]:
-    """Offline replica of the live pass: 12s window, 3s hop. Returns fired slides."""
+def simulate(lyrics: str, audio: np.ndarray, offset: float = 0.0) -> list[int]:
+    """Offline replica of the live pass: 12s window, 3s hop. Returns fired slides.
+
+    `offset` shifts the window grid — live capture starts at an arbitrary
+    phase relative to the song, and alignment changes Whisper's output.
+    """
     config = AppConfig()
     engine = LyricEngine(config.whisper, config.matching)
     engine.load_song(lyrics)
     fired: list[int] = []
     sr = SAMPLE_RATE
-    for start in range(0, int(len(audio) / sr) - 2, 3):
-        seg = audio[max(0, (start - 9)) * sr:(start + 3) * sr]
+    start = offset
+    total = len(audio) / sr
+    while start + 3 <= total:
+        seg = audio[max(0, int((start - 9) * sr)):int((start + 3) * sr)]
         r = engine.match_lyrics(engine.transcribe(seg, sr))
         if r.suggestion:
             engine.confirm_move(r.suggestion.index)
             engine._last_move_time = 0  # sim time ≠ wall time; skip debounce
             fired.append(r.suggestion.index)
+        start += 3
     return fired
 
 

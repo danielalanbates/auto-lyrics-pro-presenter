@@ -56,27 +56,14 @@
   },
   "abundantly-more-feat-clay-finnesand-live-at-decatur-city": {
     "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
-    "slides": 16,
+    "slides": 15,
     "fired": [
       0,
       1,
       2,
       3,
-      4,
       5,
-      6
-    ],
-    "perfect": false
-  },
-  "glory-honor-power-live": {
-    "track": "Glory, Honor, Power (Live)",
-    "slides": 23,
-    "fired": [
-      0,
-      1,
-      2,
-      3,
-      4,
+      6,
       7,
       8,
       9,
@@ -85,6 +72,20 @@
       12,
       13,
       14
+    ],
+    "perfect": false
+  },
+  "glory-honor-power-live": {
+    "track": "Glory, Honor, Power (Live)",
+    "slides": 24,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
     ],
     "perfect": false
   },
