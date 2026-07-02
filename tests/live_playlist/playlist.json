@@ -13,18 +13,6 @@
       "slides": 24
     },
     {
-      "track": "First Love (Live)",
-      "slug": "first-love-live",
-      "duration": 325.0,
-      "slides": 24
-    },
-    {
-      "track": "Who You Say I Am (Live)",
-      "slug": "who-you-say-i-am-live",
-      "duration": 329.079986572266,
-      "slides": 25
-    },
-    {
       "track": "Holy Ground (feat. Melodie Malone) [Live]",
       "slug": "holy-ground-feat-melodie-malone-live",
       "duration": 328.972991943359,
@@ -59,6 +47,18 @@
       "slug": "glory-honor-power-live",
       "duration": 307.135,
       "slides": 23
+    },
+    {
+      "track": "First Love (Live)",
+      "slug": "first-love-live",
+      "duration": 325.0,
+      "slides": 17
+    },
+    {
+      "track": "Who You Say I Am (Live)",
+      "slug": "who-you-say-i-am-live",
+      "duration": 329.0799375,
+      "slides": 4
     }
   ]
 }

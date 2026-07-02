@@ -102,7 +102,7 @@
   },
   "first-love-live": {
     "track": "First Love (Live)",
-    "slides": 24,
+    "slides": 17,
     "fired": [
       0,
       1,
@@ -115,7 +115,10 @@
       8,
       9,
       10,
-      11
+      11,
+      12,
+      13,
+      16
     ],
     "perfect": false
   },
