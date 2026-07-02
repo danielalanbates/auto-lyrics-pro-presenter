@@ -160,6 +160,9 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
     noise = rng.standard_normal(len(audio)).astype(np.float32)
     noise *= float(np.sqrt((audio ** 2).mean())) * 0.15
     variants = [(0.0, audio), (1.0, audio + noise), (2.0, audio)]
+    # A usable deck needs real density — a 3-slide deck for a 5-minute song
+    # "passes" trivially and is worthless in production.
+    floor = max(6, int(dur / 45))
     for round_ in range(6):
         lyrics = "\n\n".join("\n".join(sl) for sl in slides)
         fired_sets = [simulate(lyrics, a, off) for off, a in variants]
@@ -170,11 +173,19 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
         )
         if all(f == want for f in fired_sets):
             break
-        # Keep slides that fired in order at EVERY offset
-        common = set(fired_sets[0])
-        for f in fired_sets[1:]:
-            common &= set(f)
-        slides = [slides[i] for i in sorted(common)] or slides[:1]
+        # Keep slides that fired in order at EVERY offset; if that guts the
+        # deck below the density floor, relax to majority vote instead.
+        counts = {}
+        for f in fired_sets:
+            for i in set(f):
+                counts[i] = counts.get(i, 0) + 1
+        strict = [i for i, c in counts.items() if c == len(variants)]
+        majority = [i for i, c in counts.items() if c >= 2]
+        keep = strict if len(strict) >= floor else majority
+        if len(keep) < floor and len(slides) >= floor:
+            logger.warning(f"pruning would drop below floor ({len(keep)}<{floor}); keeping deck as-is")
+            break
+        slides = [slides[i] for i in sorted(keep)] or slides[:1]
 
     lyrics_path = PLAYLIST_DIR / f"{s}.txt"
     lyrics_path.write_text("\n\n".join("\n".join(sl) for sl in slides) + "\n")
@@ -278,7 +289,9 @@ def live_test(track: str) -> dict:
         music_stop()
 
     fired = [i for _, i in bridge.fired]
-    perfect = fired == list(range(n_slides))
+    # A pass only counts against a real deck — degenerate few-slide decks
+    # pass trivially without demonstrating anything.
+    perfect = fired == list(range(n_slides)) and n_slides >= 6
     result = {
         "track": track,
         "slides": n_slides,
