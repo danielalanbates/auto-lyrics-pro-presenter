@@ -86,6 +86,14 @@ def ensure_deck(bridge: ProPresenterBridge, track: str) -> tuple[str, int]:
                 break
     if uuid is None:
         raise RuntimeError(f"ProPresenter never indexed '{name}'")
+    # PP caches a deck's parse by name for the whole session — even across
+    # file deletion — so verify it actually sees the slides we exported.
+    got = bridge.slide_count(uuid)
+    if got != n_slides:
+        raise RuntimeError(
+            f"PP parses '{name}' as {got} slides, expected {n_slides} — "
+            "stale session cache; restart ProPresenter"
+        )
     return uuid, n_slides
 
 

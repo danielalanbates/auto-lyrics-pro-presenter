@@ -76,24 +76,7 @@
   },
   "glory-honor-power-live": {
     "track": "Glory, Honor, Power (Live)",
-    "slides": 17,
-    "fired": [
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      11,
-      12,
-      13,
-      14,
-      15,
-      16
-    ],
+    "error": "osascript failed: 4:17: syntax error: A identifier can\u2019t go after this identifier. (-2740)",
     "perfect": false
   },
   "first-love-live": {

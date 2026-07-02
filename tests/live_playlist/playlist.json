@@ -37,12 +37,6 @@
       "slides": 7
     },
     {
-      "track": "Glory, Honor, Power (Live)",
-      "slug": "glory-honor-power-live",
-      "duration": 307.135,
-      "slides": 17
-    },
-    {
       "track": "First Love (Live)",
       "slug": "first-love-live",
       "duration": 325.0,
@@ -59,6 +53,12 @@
       "slug": "one-live-at-church",
       "duration": 359.994995117188,
       "slides": 1
+    },
+    {
+      "track": "Glory, Honor, Power (Live)",
+      "slug": "glory-honor-power-live",
+      "duration": 307.135,
+      "slides": 17
     }
   ]
 }

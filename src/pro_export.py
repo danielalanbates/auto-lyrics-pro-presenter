@@ -6,6 +6,7 @@ where the app picks it up automatically. This is what lets the pipeline drive
 real slides in ProPresenter instead of a mock.
 """
 
+import base64
 import re
 import uuid as uuidlib
 from pathlib import Path
@@ -47,68 +48,67 @@ def _uuid() -> str:
     return str(uuidlib.uuid4()).upper()
 
 
+# A cue serialized from a deck ProPresenter itself authored, then verified to
+# round-trip: PP parses it into a real slide and triggers it over the API.
+# Hand-built cues that *look* structurally identical parse to zero slides —
+# PP is picky in ways the schema doesn't express — so we clone this template
+# and swap uuids + rtf_data instead of constructing cues field by field.
+TEMPLATE_CUE_B64 = (
+    "CiYKJDI3NEJFMjMxLTQ4QzUtNDFEMy04MjVELTE5Q0UyRUY2RjNBRigBQgBSyAYKJgokODI5Q0JGM0UtRUMzRC00RkMwLUE3"
+    "MEYtRjAwRTg2OTEzMkJDMAFIC7oBmAYSlQYKjgYKzwUKtAUKJgokMjU1MkE2MkYtQjM4Qy00MEY3LTgwRDQtODk0QjU3M0Mw"
+    "NkZCGigKEgkAAAAAAABOQBEAAAAAAABOQBISCQAAAAAAIJxAEQAAAAAAAI5AKQAAAAAAAPA/QpIBCAESBgoAEgAaABIhCgkJ"
+    "AAAAAAAA8D8SCQkAAAAAAADwPxoJCQAAAAAAAPA/EjwKEgkAAAAAAADwPxEAAAAAAADwPxISCQAAAAAAAPA/EQAAAAAAAPA/"
+    "GhIJAAAAAAAA8D8RAAAAAAAA8D8SIQoJEQAAAAAAAPA/EgkRAAAAAAAA8D8aCREAAAAAAADwPxoCCAFKAFIAWgBiAGq3Axpm"
+    "Ci8KEkhlbHZldGljYU5ldWUtQm9sZBEAAAAAAABOQEABSg5IZWx2ZXRpY2EgTmV1ZRoUDQAAgD8VAACAPx0AAIA/JQAAgD8i"
+    "ADIWCAIpAAAAAAAA8D9hAAAAAAAAVUBqAEoAmAEBIgAqowJ7XHJ0ZjFcYW5zaVxhbnNpY3BnMTI1Mlxjb2NvYXJ0ZjI4NzAK"
+    "XGNvY29hdGV4dHNjYWxpbmcwXGNvY29hcGxhdGZvcm0we1xmb250dGJsXGYwXGZzd2lzc1xmY2hhcnNldDAgSGVsdmV0aWNh"
+    "TmV1ZS1Cb2xkO30Ke1xjb2xvcnRibDtccmVkMjU1XGdyZWVuMjU1XGJsdWUyNTU7fQp7XCpcZXhwYW5kZWRjb2xvcnRibDs7"
+    "fQpccGFyZFxxY1xwYXJ0aWdodGVuZmFjdG9yMAoKXGYwXGJcZnMxMjAgXGNmMSBNeSBsaWZlIGlzIGEgc3RvcnkgYWJvdXQg"
+    "aG93IEkgd2FzIHRoaW5raW5nIHdoZW4gSSBkaWQgaXQgZG9uZX0wAUIASAFaByAg4oCiICBiFhoUDT81fj8VXI9CPx1vEgM9"
+    "JQAAgD9yACADShQRAAAAAAAA4D8YASFYpAw83ZqvPzISCQAAAAAAAJ5AEQAAAAAA4JBAOiYKJDBGNUNFRjU0LTJCREItNDYx"
+    "MC04MEEzLUYwNkE2NEUyRkREQyICGAFgAQ=="
+)
+
+
+def _template_cue():
+    from .pp_proto import cue_pb2
+    cue = cue_pb2.Cue()
+    cue.ParseFromString(base64.b64decode(TEMPLATE_CUE_B64))
+    return cue
+
+
+# Presentation skeleton from the same PP-authored deck (cues stripped) — the
+# header fields PP wrote, verified to parse. Hand-built headers yield decks
+# whose cues PP silently drops.
+TEMPLATE_PRES_B64 = "Ch0IARIGCBoQBRgBGAEiDwgVEAMiCTM1MjUxODE3OBIAQgBKAhgBcgCKAQA="
+
+
 def build_presentation(name: str, slides: list[list[str]]) -> "presentation_pb2.Presentation":
     """Build a Presentation with one text slide per slide block."""
     p = presentation_pb2.Presentation()
-    ai = p.application_info
-    ai.platform = ai.PLATFORM_MACOS
-    ai.application = ai.APPLICATION_PROPRESENTER
-    ai.application_version.major_version = 21
-    ai.application_version.minor_version = 3
-    p.uuid.string = _uuid()
+    p.ParseFromString(base64.b64decode(TEMPLATE_PRES_B64))
+    # Deterministic per name: PP indexes a .pro by the uuid it first saw and
+    # 404s if an overwrite changes it, so re-exports must keep the identity.
+    p.uuid.string = str(uuidlib.uuid5(uuidlib.NAMESPACE_URL, "autolyrics:" + name)).upper()
     p.name = name
-    p.background.SetInParent()
-    p.chord_chart.platform = p.chord_chart.PLATFORM_MACOS
 
     group = p.cue_groups.add()
     group.group.uuid.string = _uuid()
     group.group.name = "Lyrics"
     group.group.hotKey.SetInParent()
 
+    tpl = _template_cue()
     for lines in slides:
         cue = p.cues.add()
+        cue.CopyFrom(tpl)
         cue.uuid.string = _uuid()
-        cue.completion_action_type = cue.COMPLETION_ACTION_TYPE_LAST
-        cue.hot_key.SetInParent()
-        gid = group.cue_identifiers.add()
-        gid.string = cue.uuid.string
-
-        action = cue.actions.add()
-        action.uuid.string = _uuid()
-        action.isEnabled = True
-        action.type = action.ACTION_TYPE_PRESENTATION_SLIDE
-
-        slide = action.slide.presentation.base_slide
-        slide.uuid.string = _uuid()
-        slide.size.width = 1920
-        slide.size.height = 1080
-        slide.draws_background_color = False
-
-        el = slide.elements.add().element
-        el.uuid.string = _uuid()
-        el.name = "Lyrics"
-        el.bounds.origin.x = 60
-        el.bounds.origin.y = 60
-        el.bounds.size.width = 1800
-        el.bounds.size.height = 960
-        el.opacity = 1.0
-        el.fill.SetInParent()
-
-        text = el.text
-        f = text.attributes.font
-        f.name = "HelveticaNeue-Bold"
-        f.size = 60
-        f.family = "Helvetica Neue"
-        f.bold = True
-        fill = text.attributes.text_solid_fill
-        fill.red = fill.green = fill.blue = fill.alpha = 1.0
-        ps = text.attributes.paragraph_style
-        ps.alignment = ps.ALIGNMENT_CENTER
-        ps.line_height_multiple = 1.0
-        text.vertical_alignment = text.VERTICAL_ALIGNMENT_MIDDLE
-        text.is_superscript_standardized = True
+        cue.actions[0].uuid.string = _uuid()
+        sl = cue.actions[0].slide.presentation.base_slide
+        sl.uuid.string = _uuid()
+        sl.elements[0].element.uuid.string = _uuid()
         body = "\\\n".join(_rtf_escape(l) for l in lines)
-        text.rtf_data = (RTF_TEMPLATE % body).encode()
+        sl.elements[0].element.text.rtf_data = (RTF_TEMPLATE % body).encode()
+        group.cue_identifiers.add().string = cue.uuid.string
     return p
 
 

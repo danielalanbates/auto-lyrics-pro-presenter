@@ -66,6 +66,12 @@ class ProPresenterBridge:
                     return it["uuid"]
         return None
 
+    def slide_count(self, uuid: str) -> int:
+        """How many slides ProPresenter's parse of a presentation contains."""
+        data = self._get(f"v1/presentation/{uuid}") or {}
+        pres = data.get("presentation") or {}
+        return sum(len(g.get("slides", [])) for g in pres.get("groups", []))
+
     def focus_presentation(self, uuid: str):
         """Make a presentation the target for slide triggers."""
         self.presentation_uuid = uuid
