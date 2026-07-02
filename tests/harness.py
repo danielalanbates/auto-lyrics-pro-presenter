@@ -156,13 +156,17 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
     # will never match live. Repeat until the simulation is a perfect pass.
     # Prune against multiple window alignments: live capture starts at an
     # arbitrary phase, so a slide must fire at every offset to be trusted.
+    rng = np.random.default_rng(7)
+    noise = rng.standard_normal(len(audio)).astype(np.float32)
+    noise *= float(np.sqrt((audio ** 2).mean())) * 0.15
+    variants = [(0.0, audio), (1.0, audio + noise), (2.0, audio)]
     for round_ in range(6):
         lyrics = "\n\n".join("\n".join(sl) for sl in slides)
-        fired_sets = [simulate(lyrics, audio, off) for off in (0.0, 1.5)]
+        fired_sets = [simulate(lyrics, a, off) for off, a in variants]
         want = list(range(len(slides)))
         logger.info(
             f"self-check round {round_}: " +
-            ", ".join(f"off{o}: {len(f)}/{len(slides)}" for o, f in zip((0.0, 1.5), fired_sets))
+            ", ".join(f"v{i}: {len(f)}/{len(slides)}" for i, f in enumerate(fired_sets))
         )
         if all(f == want for f in fired_sets):
             break

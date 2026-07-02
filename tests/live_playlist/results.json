@@ -76,12 +76,13 @@
   },
   "glory-honor-power-live": {
     "track": "Glory, Honor, Power (Live)",
-    "slides": 4,
+    "slides": 20,
     "fired": [
       0,
       1,
       2,
-      3
+      3,
+      4
     ],
     "perfect": false
   },
