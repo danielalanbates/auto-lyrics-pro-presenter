@@ -152,7 +152,10 @@ class LyricEngine:
             if conf > best_conf:
                 best_idx, best_conf = idx, conf
 
-        if best_idx < 0 or best_conf < self.matching_config.confidence_threshold:
+        threshold = self.matching_config.confidence_threshold
+        if best_idx > cur + 1 and cur >= 0:
+            threshold += self.matching_config.jump_margin
+        if best_idx < 0 or best_conf < threshold:
             return MatchResult(confidence=best_conf)
 
         slide = self._slides[best_idx]

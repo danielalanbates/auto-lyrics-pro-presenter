@@ -48,6 +48,7 @@ class MatchingConfig:
     # repeats as sequential slides, and back-jumps cause chorus oscillation.
     lookbehind_slides: int = 0
     next_slide_bias: float = 0.08  # Score bonus for the expected next slide
+    jump_margin: float = 0.12  # Extra confidence required to jump 2+ slides
 
 
 @dataclass
