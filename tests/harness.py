@@ -266,6 +266,8 @@ def live_test(track: str) -> dict:
                     osa('tell application "Music" to play')  # resume, don't restart
                 if not_playing >= 5:
                     break
+        # Post-roll: let the pipeline process the final buffered windows.
+        time.sleep(9)
     finally:
         capture.stop()
         music_stop()
