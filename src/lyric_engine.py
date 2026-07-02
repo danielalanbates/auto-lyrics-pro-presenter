@@ -141,7 +141,7 @@ class LyricEngine:
         now = time.time()
         cur = self._current_slide
 
-        best_idx, best_conf = -1, 0.0
+        scored: list[tuple[int, float]] = []
         for idx in self._candidate_indices(cur):
             conf = self._score(norm, self._slides[idx])
             # Slight bias toward the immediate next slide — the common case —
@@ -151,8 +151,17 @@ class LyricEngine:
                 conf += self.matching_config.next_slide_bias
             elif idx > cur + 1:
                 conf -= self.matching_config.next_slide_bias * (idx - cur - 1)
-            if conf > best_conf:
-                best_idx, best_conf = idx, conf
+            scored.append((idx, conf))
+
+        best_idx, best_conf = -1, 0.0
+        if scored:
+            top = max(c for _, c in scored)
+            # Earliest candidate within epsilon of the top score — repeated
+            # sections make later copies score the same; nearest wins.
+            for idx, conf in scored:
+                if conf >= top - self.matching_config.tie_epsilon:
+                    best_idx, best_conf = idx, conf
+                    break
 
         m = self.matching_config
         threshold = m.confidence_threshold

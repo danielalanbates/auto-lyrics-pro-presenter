@@ -49,16 +49,16 @@
       "slides": 34
     },
     {
-      "track": "Glory, Honor, Power (Live)",
-      "slug": "glory-honor-power-live",
-      "duration": 307.135,
-      "slides": 24
-    },
-    {
       "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
       "slug": "abundantly-more-feat-clay-finnesand-live-at-decatur-city",
       "duration": 268.5639375,
       "slides": 13
+    },
+    {
+      "track": "Glory, Honor, Power (Live)",
+      "slug": "glory-honor-power-live",
+      "duration": 307.135,
+      "slides": 23
     }
   ]
 }
