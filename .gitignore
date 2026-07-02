@@ -40,3 +40,8 @@ songs/
 # Config (may contain secrets)
 config.yaml
 .venv/
+
+# Copyrighted test fixtures — local only, never published
+tests/recordings/
+tests/live_playlist/*.txt
+tests/*.log
