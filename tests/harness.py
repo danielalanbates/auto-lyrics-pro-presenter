@@ -148,6 +148,10 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
         text = seg.text.strip()
         if not text or not re.search(r"\w", text):
             continue
+        # Drop hallucination-prone segments (crowd noise, instrumentals) —
+        # they won't reproduce in a live pass and strand the matcher.
+        if getattr(seg, "no_speech_prob", 0) > 0.6 or getattr(seg, "avg_logprob", 0) < -1.2:
+            continue
         if cur_start is None:
             cur_start = seg.start
         cur.append(text)

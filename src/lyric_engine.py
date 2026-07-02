@@ -181,8 +181,14 @@ class LyricEngine:
         m = self.matching_config
         if cur < 0:  # song not started: allow entry anywhere in the first window
             return list(range(0, min(len(self._slides), m.lookahead_slides)))
+        # Widen the window when stalled so a missed section (instrumental,
+        # crowd noise) doesn't strand the matcher behind the singer.
+        extra = 0
+        if self._last_move_time > 0:
+            stalled = time.time() - self._last_move_time
+            extra = min(6, max(0, int((stalled - 20) / 8)))
         lo = max(0, cur - m.lookbehind_slides)
-        hi = min(len(self._slides), cur + 1 + m.lookahead_slides)
+        hi = min(len(self._slides), cur + 1 + m.lookahead_slides + extra)
         return list(range(lo, hi))
 
     def _score(self, norm_transcribed: str, slide: Slide) -> float:

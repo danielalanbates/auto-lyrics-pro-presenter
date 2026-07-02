@@ -1,0 +1,70 @@
+{
+  "for-all-my-days-live-at-camp": {
+    "track": "For All My Days (Live at Camp)",
+    "slides": 17,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "perfect": true
+  },
+  "the-god-you-are-live": {
+    "track": "The God You Are (Live)",
+    "slides": 24,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "perfect": true
+  },
+  "abundantly-more-feat-clay-finnesand-live-at-decatur-city": {
+    "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
+    "slides": 22,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "perfect": false
+  }
+}
