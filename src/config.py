@@ -41,7 +41,7 @@ class MatchingConfig:
     """Lyric matching settings."""
     confidence_threshold: float = 0.55  # Minimum confidence to trigger slide change
     min_words_match: int = 3  # Minimum transcribed words before matching
-    debounce_seconds: float = 4.0  # Minimum time between slide advances
+    debounce_seconds: float = 2.5  # Minimum time between slide advances
     auto_fire: bool = True  # Fire slide changes automatically vs. suggest-and-confirm
     lookahead_slides: int = 3  # How many slides ahead to consider
     # Forward-only by default: slide decks built in performance order encode

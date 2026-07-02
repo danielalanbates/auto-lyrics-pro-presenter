@@ -102,8 +102,14 @@ class LyricEngine:
         if self._model is None:
             return ""
         try:
+            # Normalize: quiet room audio trips Whisper's no-speech gating.
+            peak = float(np.abs(audio).max())
+            if peak > 1e-4:
+                audio = audio * (0.9 / peak)
             segments, _ = self._model.transcribe(
                 audio,
+                no_speech_threshold=None,
+                log_prob_threshold=None,
                 language=self.whisper_config.language,
                 beam_size=self.whisper_config.beam_size,
                 temperature=self.whisper_config.temperature,
@@ -136,9 +142,13 @@ class LyricEngine:
         best_idx, best_conf = -1, 0.0
         for idx in self._candidate_indices(cur):
             conf = self._score(norm, self._slides[idx])
-            # Slight bias toward the immediate next slide — the common case.
+            # Slight bias toward the immediate next slide — the common case —
+            # and a growing penalty on jumps, so near-identical repeated
+            # sections (choruses) resolve to the closest forward copy.
             if idx == cur + 1:
                 conf += self.matching_config.next_slide_bias
+            elif idx > cur + 1:
+                conf -= self.matching_config.next_slide_bias * (idx - cur - 1)
             if conf > best_conf:
                 best_idx, best_conf = idx, conf
 
