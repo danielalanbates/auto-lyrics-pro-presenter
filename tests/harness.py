@@ -72,6 +72,7 @@ def music_play(track: str) -> float:
     force_speakers()
     # Moderate volume — enough for the mic to hear, easy on the speakers.
     osa('set volume output volume 30')  # operator cap: never above 30
+    osa('set volume input volume 90')  # high mic gain compensates the low volume
     osa('tell application "Music" to set sound volume to 70')
     dur = float(osa(
         f'tell application "Music" to get duration of track "{track}" of playlist "{MUSIC_PLAYLIST}"'
