@@ -13,10 +13,52 @@
       "slides": 24
     },
     {
+      "track": "Glory, Honor, Power (Live)",
+      "slug": "glory-honor-power-live",
+      "duration": 307.135009765625,
+      "slides": 23
+    },
+    {
+      "track": "First Love (Live)",
+      "slug": "first-love-live",
+      "duration": 325.0,
+      "slides": 24
+    },
+    {
+      "track": "Who You Say I Am (Live)",
+      "slug": "who-you-say-i-am-live",
+      "duration": 329.079986572266,
+      "slides": 25
+    },
+    {
+      "track": "Holy Ground (feat. Melodie Malone) [Live]",
+      "slug": "holy-ground-feat-melodie-malone-live",
+      "duration": 328.972991943359,
+      "slides": 20
+    },
+    {
+      "track": "One (Live At Church)",
+      "slug": "one-live-at-church",
+      "duration": 359.994995117188,
+      "slides": 28
+    },
+    {
+      "track": "Know (Be Still) [Live in Anaheim, California]",
+      "slug": "know-be-still-live-in-anaheim-california",
+      "duration": 371.755004882812,
+      "slides": 24
+    },
+    {
+      "track": "Freedom (feat. Kim Walker-Smith) [Live]",
+      "slug": "freedom-feat-kim-walker-smith-live",
+      "duration": 391.049987792969,
+      "slides": 34
+    },
+    {
       "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
       "slug": "abundantly-more-feat-clay-finnesand-live-at-decatur-city",
-      "duration": 268.563995361328,
-      "slides": 22
+      "duration": 268.5639375,
+      "slides": 3
     }
   ]
 }

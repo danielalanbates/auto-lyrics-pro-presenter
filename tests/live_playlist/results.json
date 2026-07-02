@@ -56,14 +56,143 @@
   },
   "abundantly-more-feat-clay-finnesand-live-at-decatur-city": {
     "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
-    "slides": 22,
+    "slides": 3,
+    "fired": [
+      0,
+      2
+    ],
+    "perfect": false
+  },
+  "glory-honor-power-live": {
+    "track": "Glory, Honor, Power (Live)",
+    "slides": 23,
     "fired": [
       0,
       1,
       2,
       3,
       4,
-      5
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "perfect": false
+  },
+  "first-love-live": {
+    "track": "First Love (Live)",
+    "slides": 24,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "perfect": false
+  },
+  "who-you-say-i-am-live": {
+    "track": "Who You Say I Am (Live)",
+    "slides": 25,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "perfect": false
+  },
+  "holy-ground-feat-melodie-malone-live": {
+    "track": "Holy Ground (feat. Melodie Malone) [Live]",
+    "slides": 20,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "perfect": false
+  },
+  "one-live-at-church": {
+    "track": "One (Live At Church)",
+    "slides": 28,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "perfect": false
+  },
+  "know-be-still-live-in-anaheim-california": {
+    "track": "Know (Be Still) [Live in Anaheim, California]",
+    "slides": 24,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "perfect": false
+  },
+  "freedom-feat-kim-walker-smith-live": {
+    "track": "Freedom (feat. Kim Walker-Smith) [Live]",
+    "slides": 34,
+    "fired": [
+      0,
+      1,
+      3,
+      4,
+      5,
+      6
     ],
     "perfect": false
   }

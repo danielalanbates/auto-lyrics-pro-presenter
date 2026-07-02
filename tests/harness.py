@@ -71,7 +71,7 @@ def music_play(track: str) -> float:
     """Start the track from the beginning; return its duration in seconds."""
     force_speakers()
     # Moderate volume — enough for the mic to hear, easy on the speakers.
-    osa('set volume output volume 40')
+    osa('set volume output volume 50')
     osa('tell application "Music" to set sound volume to 70')
     dur = float(osa(
         f'tell application "Music" to get duration of track "{track}" of playlist "{MUSIC_PLAYLIST}"'
@@ -150,7 +150,8 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
             continue
         # Drop hallucination-prone segments (crowd noise, instrumentals) —
         # they won't reproduce in a live pass and strand the matcher.
-        if getattr(seg, "no_speech_prob", 0) > 0.6 or getattr(seg, "avg_logprob", 0) < -1.2:
+        # (no_speech_prob is unreliable on music — sung lyrics score 0.6-0.95)
+        if getattr(seg, "avg_logprob", 0) < -1.0:
             continue
         if cur_start is None:
             cur_start = seg.start
