@@ -30,7 +30,8 @@ from src.config import AppConfig  # noqa: E402
 from src.propresenter_bridge import ProPresenterBridge  # noqa: E402
 from src.pro_export import export_song  # noqa: E402
 from tests.harness import (  # noqa: E402
-    PLAYLIST_DIR, MANIFEST, mic_device, music_play, music_stop, force_speakers, slug, osa,
+    PLAYLIST_DIR, MANIFEST, mic_device, music_play, music_stop,
+    wav_play, wav_stop, force_speakers, slug, osa,
 )
 
 
@@ -73,8 +74,9 @@ def ensure_deck(bridge: ProPresenterBridge, track: str) -> tuple[str, int]:
     lyrics_path = PLAYLIST_DIR / f"{slug(track)}.txt"
     if not lyrics_path.exists():
         raise FileNotFoundError(f"No reference lyrics for '{track}'")
-    name = f"AutoLyrics - {track}"
     lyrics = lyrics_path.read_text()
+    from src.pro_export import deck_name
+    name = deck_name(track, lyrics)
     n_slides = lyrics.strip().count("\n\n") + 1
     uuid = bridge.find_presentation(name)
     if uuid is None:
@@ -153,28 +155,46 @@ def live_pp_test(track: str) -> dict:
                 logger.error(f"PP shows {bridge.live_slide_index()}, expected {sug.index}")
 
     capture = AudioCapture(config.audio, callback=on_audio)
-    dur = music_play(track)
+    dur = wav_play(track)
+    player = "sounddevice" if dur is not None else None
+    if player is None:
+        dur = music_play(track)
     logger.info(f"LIVE PP TEST '{track}' — {n_slides} slides, {dur:.0f}s")
     capture.start()
     t0 = time.time()
     not_playing = 0
+    pos = 0.0
     try:
-        while time.time() - t0 < dur + 3:
-            time.sleep(2)
-            force_speakers()
-            state = osa('tell application "Music" to get player state as string')
-            if state == "playing":
-                not_playing = 0
-            else:
-                not_playing += 1
-                if not_playing == 2 and time.time() - t0 < dur - 5:
-                    osa('tell application "Music" to play')
-                if not_playing >= 5:
-                    break
+        if player is not None:
+            while time.time() - t0 < dur + 2:
+                time.sleep(2)
+        else:
+            # Follow the PLAYER's position, not wall clock — streaming playback
+            # stalls and resumes, and a wall-clock cutoff truncates the song.
+            while time.time() - t0 < dur * 2 + 60:
+                time.sleep(2)
+                force_speakers()
+                state = osa('tell application "Music" to get player state as string')
+                if state == "playing":
+                    not_playing = 0
+                    try:
+                        pos = float(osa('tell application "Music" to get player position'))
+                    except (RuntimeError, ValueError):
+                        pass
+                    if pos >= dur - 1:
+                        break
+                else:
+                    if pos >= dur - 5:
+                        break
+                    not_playing += 1
+                    if not_playing == 2:
+                        osa('tell application "Music" to play')
+                    if not_playing >= 5:
+                        break
         time.sleep(9)
     finally:
         capture.stop()
-        music_stop()
+        wav_stop() if player is not None else music_stop()
 
     want = list(range(n_slides))
     result = {

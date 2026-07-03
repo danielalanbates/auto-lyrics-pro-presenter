@@ -67,12 +67,53 @@ def force_speakers():
         pass
 
 
+# HARD operator cap: the user's speakers must never go above 30%.
+MAX_OUTPUT_VOLUME = 30
+
+
+def set_test_volumes():
+    """Set output/input levels for a test run, enforcing the speaker cap."""
+    osa(f'set volume output volume {min(MAX_OUTPUT_VOLUME, 30)}')
+    osa('set volume input volume 90')  # high mic gain compensates the low volume
+
+
+def wav_play(track: str) -> float | None:
+    """Replay the song's local recording through the built-in speakers.
+
+    Returns the duration, or None when no recording exists. Preferred over
+    Apple Music playback: streaming stalls mid-song, which breaks whisper's
+    context and wrecks run-to-run consistency.
+    """
+    import sounddevice as sd
+    wav = RECORDINGS_DIR / f"{slug(track)}.wav"
+    if not wav.exists():
+        return None
+    data, _sr = sf.read(str(wav), dtype="float32")
+    # Mic recordings are quiet (captured at low volume); RMS-normalize so the
+    # replay reaches the mic at the loudness of the original playback. Peak
+    # normalization is useless here — stray clipped samples pin it.
+    rms = float(np.sqrt((data ** 2).mean())) or 1.0
+    data = np.clip(data * (0.12 / rms), -1.0, 1.0)
+    force_speakers()
+    out_dev = next(
+        i for i, d in enumerate(sd.query_devices())
+        if "MacBook Pro Speakers" in d["name"] and d["max_output_channels"] > 0
+    )
+    set_test_volumes()
+    sd.play(data, _sr, device=out_dev)
+    return len(data) / _sr
+
+
+def wav_stop():
+    import sounddevice as sd
+    sd.stop()
+
+
 def music_play(track: str) -> float:
     """Start the track from the beginning; return its duration in seconds."""
     force_speakers()
     # Moderate volume — enough for the mic to hear, easy on the speakers.
-    osa('set volume output volume 30')  # operator cap: never above 30
-    osa('set volume input volume 90')  # high mic gain compensates the low volume
+    set_test_volumes()
     osa('tell application "Music" to set sound volume to 70')
     dur = float(osa(
         f'tell application "Music" to get duration of track "{track}" of playlist "{MUSIC_PLAYLIST}"'
@@ -159,7 +200,10 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
     rng = np.random.default_rng(7)
     noise = rng.standard_normal(len(audio)).astype(np.float32)
     noise *= float(np.sqrt((audio ** 2).mean())) * 0.15
-    variants = [(0.0, audio), (1.0, audio + noise), (2.0, audio)]
+    # Offset variants prune order-unstable slides. The noise variant is much
+    # harsher — it collapses decks to the density floor — so it only VOTES
+    # via majority, it can't unilaterally prune (see keep logic below).
+    variants = [(0.0, audio), (1.5, audio), (1.0, audio + noise)]
     # A usable deck needs real density — a 3-slide deck for a 5-minute song
     # "passes" trivially and is worthless in production.
     floor = max(6, int(dur / 45))
@@ -171,7 +215,9 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
             f"self-check round {round_}: " +
             ", ".join(f"v{i}: {len(f)}/{len(slides)}" for i, f in enumerate(fired_sets))
         )
-        if all(f == want for f in fired_sets):
+        # Converged when both clean-offset variants fire everything in order;
+        # the noise variant advises pruning votes but can't block convergence.
+        if fired_sets[0] == want and fired_sets[1] == want:
             break
         # Keep slides that fired in order at EVERY offset; if that guts the
         # deck below the density floor, relax to majority vote instead.
@@ -262,31 +308,39 @@ def live_test(track: str) -> dict:
             engine.confirm_move(sug.index)
 
     capture = AudioCapture(config.audio, callback=on_audio)
-    dur = music_play(track)
-    logger.info(f"LIVE TEST '{track}' — {n_slides} slides, {dur:.0f}s")
+    dur = wav_play(track)
+    replay = dur is not None
+    if not replay:
+        dur = music_play(track)
+    logger.info(f"LIVE TEST '{track}' — {n_slides} slides, {dur:.0f}s"
+                + (" (local replay)" if replay else " (Apple Music)"))
     capture.start()
     t0 = time.time()
     not_playing = 0
     try:
-        while time.time() - t0 < dur + 3:
-            time.sleep(2)
-            force_speakers()
-            state = osa('tell application "Music" to get player state as string')
-            if state == "playing":
-                not_playing = 0
-            else:
-                not_playing += 1
-                # Streaming tracks report stopped/buffering transiently; only
-                # give up after repeated checks, and try to resume once.
-                if not_playing == 2 and time.time() - t0 < dur - 5:
-                    osa('tell application "Music" to play')  # resume, don't restart
-                if not_playing >= 5:
-                    break
+        if replay:
+            while time.time() - t0 < dur + 2:
+                time.sleep(2)
+        else:
+            while time.time() - t0 < dur + 3:
+                time.sleep(2)
+                force_speakers()
+                state = osa('tell application "Music" to get player state as string')
+                if state == "playing":
+                    not_playing = 0
+                else:
+                    not_playing += 1
+                    # Streaming tracks report stopped/buffering transiently; only
+                    # give up after repeated checks, and try to resume once.
+                    if not_playing == 2 and time.time() - t0 < dur - 5:
+                        osa('tell application "Music" to play')  # resume, don't restart
+                    if not_playing >= 5:
+                        break
         # Post-roll: let the pipeline process the final buffered windows.
         time.sleep(9)
     finally:
         capture.stop()
-        music_stop()
+        wav_stop() if replay else music_stop()
 
     fired = [i for _, i in bridge.fired]
     # A pass only counts against a real deck — degenerate few-slide decks

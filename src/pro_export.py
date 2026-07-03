@@ -48,6 +48,18 @@ def _uuid() -> str:
     return str(uuidlib.uuid4()).upper()
 
 
+def deck_name(track: str, lyrics_text: str) -> str:
+    """Content-hashed deck name.
+
+    ProPresenter caches a deck's parse by name for its whole session (even
+    across file deletion), so a rebuilt deck must get a fresh name or PP keeps
+    serving the stale parse.
+    """
+    import hashlib
+    h = hashlib.sha1(lyrics_text.encode()).hexdigest()[:6]
+    return f"AutoLyrics - {track} [{h}]"
+
+
 # A cue serialized from a deck ProPresenter itself authored, then verified to
 # round-trip: PP parses it into a real slide and triggers it over the API.
 # Hand-built cues that *look* structurally identical parse to zero slides —

@@ -74,22 +74,22 @@ class AutoLyricsApp:
 
     def _prepare_deck(self, song_name: str, lyrics: str):
         """Export the song as a native PP deck and target it for triggers."""
-        from .pro_export import export_song
+        from .pro_export import deck_name, export_song
 
-        deck_name = f"AutoLyrics - {song_name}"
-        uuid = self.pp_bridge.find_presentation(deck_name)
+        name = deck_name(song_name, lyrics)
+        uuid = self.pp_bridge.find_presentation(name)
         if uuid is None:
-            export_song(deck_name, lyrics)
+            export_song(name, lyrics)
             for _ in range(30):  # PP watches the library dir; wait for the scan
                 time.sleep(1)
-                uuid = self.pp_bridge.find_presentation(deck_name)
+                uuid = self.pp_bridge.find_presentation(name)
                 if uuid:
                     break
         if uuid:
             self.pp_bridge.focus_presentation(uuid)
-            logger.info(f"Targeting PP deck '{deck_name}' ({uuid})")
+            logger.info(f"Targeting PP deck '{name}' ({uuid})")
         else:
-            logger.warning(f"PP never indexed '{deck_name}'; triggering active presentation")
+            logger.warning(f"PP never indexed '{name}'; triggering active presentation")
 
     def _on_audio(self, audio: np.ndarray, sample_rate: int):
         """Called when new audio buffer is available."""

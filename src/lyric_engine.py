@@ -153,6 +153,11 @@ class LyricEngine:
                 conf -= self.matching_config.next_slide_bias * (idx - cur - 1)
             scored.append((idx, conf))
 
+        logger.debug(
+            "window '{}' | cur {} | {}",
+            norm[:80], cur, " ".join(f"{i}:{c:.2f}" for i, c in scored),
+        )
+
         best_idx, best_conf = -1, 0.0
         if scored:
             top = max(c for _, c in scored)

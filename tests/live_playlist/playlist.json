@@ -1,21 +1,9 @@
 {
   "songs": [
     {
-      "track": "For All My Days (Live at Camp)",
-      "slug": "for-all-my-days-live-at-camp",
-      "duration": 193.356,
-      "slides": 17
-    },
-    {
       "track": "The God You Are (Live)",
       "slug": "the-god-you-are-live",
       "duration": 255.179000854492,
-      "slides": 24
-    },
-    {
-      "track": "Know (Be Still) [Live in Anaheim, California]",
-      "slug": "know-be-still-live-in-anaheim-california",
-      "duration": 371.755004882812,
       "slides": 24
     },
     {
@@ -31,34 +19,46 @@
       "slides": 13
     },
     {
+      "track": "Glory, Honor, Power (Live)",
+      "slug": "glory-honor-power-live",
+      "duration": 307.135,
+      "slides": 17
+    },
+    {
+      "track": "For All My Days (Live at Camp)",
+      "slug": "for-all-my-days-live-at-camp",
+      "duration": 193.356,
+      "slides": 6
+    },
+    {
       "track": "Who You Say I Am (Live)",
       "slug": "who-you-say-i-am-live",
-      "duration": 329.079986572266,
-      "slides": 7
+      "duration": 329.0799375,
+      "slides": 14
     },
     {
       "track": "First Love (Live)",
       "slug": "first-love-live",
       "duration": 325.0,
-      "slides": 3
+      "slides": 16
     },
     {
       "track": "Holy Ground (feat. Melodie Malone) [Live]",
       "slug": "holy-ground-feat-melodie-malone-live",
-      "duration": 328.972991943359,
-      "slides": 10
+      "duration": 328.9729375,
+      "slides": 12
     },
     {
       "track": "One (Live At Church)",
       "slug": "one-live-at-church",
-      "duration": 359.994995117188,
-      "slides": 1
+      "duration": 359.9949375,
+      "slides": 14
     },
     {
-      "track": "Glory, Honor, Power (Live)",
-      "slug": "glory-honor-power-live",
-      "duration": 307.135,
-      "slides": 17
+      "track": "Know (Be Still) [Live in Anaheim, California]",
+      "slug": "know-be-still-live-in-anaheim-california",
+      "duration": 371.755004882812,
+      "slides": 9
     }
   ]
 }
