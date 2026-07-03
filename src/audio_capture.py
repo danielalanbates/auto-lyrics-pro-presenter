@@ -42,13 +42,19 @@ class AudioCapture:
             device = default["index"]
             logger.info(f"Using default input device: {default['name']}")
 
+        # Capture at the device's NATIVE rate: asking CoreAudio to deliver a
+        # resampled stream (e.g. 16 kHz on a 48 kHz mic) intermittently yields
+        # corrupt buffers (NaN/garbage samples). We decimate ourselves instead.
+        native_rate = int(sd.query_devices(device)["default_samplerate"])
+        self._decimate = max(1, round(native_rate / self.config.sample_rate))
+        capture_rate = self.config.sample_rate * self._decimate
         self._stream = sd.InputStream(
             device=device,
             channels=1,
-            samplerate=self.config.sample_rate,
+            samplerate=capture_rate,
             dtype=np.float32,
             callback=self._audio_callback,
-            blocksize=int(self.config.sample_rate * self.config.chunk_duration),
+            blocksize=int(capture_rate * self.config.chunk_duration),
             # Generous buffering: capture shares the machine with playback and
             # transcription; small buffers underrun and turn into static.
             latency="high",
@@ -75,7 +81,12 @@ class AudioCapture:
         if status:
             logger.warning(f"Audio status: {status}")
         if self._running:
-            audio_data = indata[:, 0].copy()  # Mono
+            audio_data = indata[:, 0]  # Mono
+            if self._decimate > 1:
+                n = len(audio_data) - len(audio_data) % self._decimate
+                audio_data = audio_data[:n].reshape(-1, self._decimate).mean(axis=1)
+            else:
+                audio_data = audio_data.copy()
             self._audio_queue.put(audio_data)
 
     def _process_loop(self):
