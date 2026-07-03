@@ -7,12 +7,6 @@
       "slides": 24
     },
     {
-      "track": "Freedom (feat. Kim Walker-Smith) [Live]",
-      "slug": "freedom-feat-kim-walker-smith-live",
-      "duration": 391.049987792969,
-      "slides": 34
-    },
-    {
       "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
       "slug": "abundantly-more-feat-clay-finnesand-live-at-decatur-city",
       "duration": 268.563995361328,
@@ -59,6 +53,12 @@
       "slug": "know-be-still-live-in-anaheim-california",
       "duration": 371.755004882812,
       "slides": 9
+    },
+    {
+      "track": "Freedom (feat. Kim Walker-Smith) [Live]",
+      "slug": "freedom-feat-kim-walker-smith-live",
+      "duration": 391.0499375,
+      "slides": 31
     }
   ]
 }
