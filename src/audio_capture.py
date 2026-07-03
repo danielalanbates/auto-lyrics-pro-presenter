@@ -49,6 +49,9 @@ class AudioCapture:
             dtype=np.float32,
             callback=self._audio_callback,
             blocksize=int(self.config.sample_rate * self.config.chunk_duration),
+            # Generous buffering: capture shares the machine with playback and
+            # transcription; small buffers underrun and turn into static.
+            latency="high",
         )
         self._stream.start()
         logger.info("Audio capture started")

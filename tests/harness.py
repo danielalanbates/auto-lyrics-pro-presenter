@@ -95,18 +95,25 @@ def wav_play(track: str) -> float | None:
     rms = float(np.sqrt((data ** 2).mean())) or 1.0
     data = np.clip(data * (0.12 / rms), -1.0, 1.0)
     force_speakers()
-    out_dev = next(
-        i for i, d in enumerate(sd.query_devices())
-        if "MacBook Pro Speakers" in d["name"] and d["max_output_channels"] > 0
-    )
     set_test_volumes()
-    sd.play(data, _sr, device=out_dev)
+    # Play from a SEPARATE process: PortAudio corrupts the input stream when
+    # one process plays and records simultaneously (garbage/NaN mic samples).
+    # afplay uses the default output device, which force_speakers() just set.
+    tmp = RECORDINGS_DIR / ".tmp_play.wav"
+    sf.write(str(tmp), data, _sr)
+    global _play_proc
+    _play_proc = subprocess.Popen(["afplay", str(tmp)])
     return len(data) / _sr
 
 
+_play_proc = None
+
+
 def wav_stop():
-    import sounddevice as sd
-    sd.stop()
+    global _play_proc
+    if _play_proc is not None:
+        _play_proc.terminate()
+        _play_proc = None
 
 
 def music_play(track: str) -> float:
