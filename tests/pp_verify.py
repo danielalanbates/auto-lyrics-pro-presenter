@@ -103,19 +103,28 @@ def api_check() -> bool:
     """Trigger every slide of one deck and read back PP's live slide index."""
     bridge = make_bridge()
     manifest = json.loads(MANIFEST.read_text())
-    track = manifest["songs"][0]["track"]
-    uuid, n = ensure_deck(bridge, track)
-    bridge.focus_presentation(uuid)
-    logger.info(f"API check on '{track}' ({n} slides, uuid {uuid})")
     ok = True
-    for i in range(n):
-        bridge.go_to_slide(i)
-        if bridge.verify_slide(i):
-            logger.info(f"  slide {i}: PP confirms live")
-        else:
-            logger.error(f"  slide {i}: PP reports {bridge.live_slide_index()} instead")
-            ok = False
-    logger.info(f"API CHECK: {'PASS' if ok else 'FAIL'}")
+    checked = 0
+    for entry in manifest["songs"]:
+        track = entry["track"]
+        if not (PLAYLIST_DIR / f"{slug(track)}.txt").exists():
+            logger.warning(f"  no reference lyrics yet for '{track}' — skipping")
+            continue
+        uuid, n = ensure_deck(bridge, track)
+        bridge.focus_presentation(uuid)
+        logger.info(f"API check on '{track}' ({n} slides, uuid {uuid})")
+        checked += 1
+        for i in range(n):
+            bridge.go_to_slide(i)
+            if bridge.verify_slide(i):
+                logger.info(f"  slide {i}: PP confirms live")
+            else:
+                logger.error(f"  slide {i}: PP reports {bridge.live_slide_index()} instead")
+                ok = False
+    if checked == 0:
+        logger.error("API CHECK: no decks to check — build references first")
+        return False
+    logger.info(f"API CHECK ({checked} decks): {'PASS' if ok else 'FAIL'}")
     return ok
 
 
