@@ -4,22 +4,29 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "auto-lyrics-pro-presenter"
-version = "0.1.0"
-description = "Real-time lyric recognition and auto-advance for ProPresenter"
+version = "1.0.0"
+description = "AutoLyrics — hands-free lyric slides for ProPresenter. Listens to the room, follows the song, fires the right slide."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Daniel Bates" }]
 requires-python = ">=3.11"
 dependencies = [
-    "openai-whisper>=20231117",
-    "torch>=2.1.0",
+    "faster-whisper>=1.0.0",
     "numpy>=1.24.0",
     "sounddevice>=0.4.6",
     "soundfile>=0.12.1",
     "scipy>=1.11.0",
-    "demucs>=4.0.0",
     "python-osc>=1.8.3",
     "requests>=2.31.0",
     "pyyaml>=6.0",
     "loguru>=0.7.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/danielalanbates/auto-lyrics-pro-presenter"
+
+[project.scripts]
+autolyrics = "src.main:main"
 
 [project.optional-dependencies]
 dev = [
@@ -29,5 +36,5 @@ dev = [
     "ruff>=0.1.0",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools]
+packages = ["src", "src.pp_proto"]

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="120" viewBox="0 0 560 120" role="img" aria-label="AutoLyrics for ProPresenter">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C5CFF"/>
+      <stop offset="1" stop-color="#2EC5FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="560" height="120" rx="14" fill="#1B1F24"/>
+  <!-- waveform-to-slides mark -->
+  <g transform="translate(18,24)">
+    <rect x="0" y="26" width="6" height="20" rx="3" fill="url(#g)"/>
+    <rect x="12" y="14" width="6" height="44" rx="3" fill="url(#g)"/>
+    <rect x="24" y="2"  width="6" height="68" rx="3" fill="url(#g)"/>
+    <rect x="36" y="18" width="6" height="36" rx="3" fill="url(#g)"/>
+    <rect x="48" y="28" width="6" height="16" rx="3" fill="url(#g)"/>
+    <path d="M62 36 h16" stroke="#9AA4B2" stroke-width="3" stroke-linecap="round"/>
+    <path d="M73 30 l7 6 -7 6" fill="none" stroke="#9AA4B2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="86" y="10" width="76" height="52" rx="6" fill="none" stroke="url(#g)" stroke-width="4"/>
+    <rect x="96" y="24" width="56" height="6" rx="3" fill="#9AA4B2"/>
+    <rect x="96" y="38" width="40" height="6" rx="3" fill="#9AA4B2"/>
+  </g>
+  <text x="200" y="62" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="44" font-weight="700" fill="#E8EAED">Auto<tspan fill="#2EC5FF">Lyrics</tspan></text>
+  <text x="202" y="92" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#9AA4B2">hands-free lyric slides for ProPresenter</text>
+</svg>

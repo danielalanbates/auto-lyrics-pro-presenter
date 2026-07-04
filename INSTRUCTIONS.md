@@ -1,6 +1,6 @@
-# Operator Instructions
+# AutoLyrics — Operator Instructions
 
-Step-by-step instructions for running Auto Lyrics Pro Presenter on a Sunday morning, adding new songs, and re-verifying the system after changes. For architecture and design rationale, see [README.md](README.md).
+Step-by-step instructions for running AutoLyrics on a Sunday morning, adding new songs, and re-verifying the system after changes. For architecture and design rationale, see [README.md](README.md).
 
 ## 1. One-time setup
 

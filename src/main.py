@@ -1,4 +1,13 @@
-"""Main entry point for Auto Lyrics Pro Presenter."""
+"""Main entry point for AutoLyrics."""
+
+__version__ = "1.0.0"
+
+BANNER = rf"""
+  ┌─────────────────────────────────────────────┐
+  │   ♪ AutoLyrics for ProPresenter  v{__version__}     │
+  │   listens · follows · fires the right slide │
+  └─────────────────────────────────────────────┘
+"""
 
 import signal
 import sys
@@ -147,12 +156,18 @@ def main():
     """CLI entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Auto Lyrics Pro Presenter")
+    parser = argparse.ArgumentParser(
+        prog="autolyrics",
+        description="AutoLyrics for ProPresenter — listens to the room, follows the song, fires the right slide.",
+        epilog='Example: autolyrics --song "For All My Days (Live at Camp)"',
+    )
     parser.add_argument("--config", type=Path, help="Path to config YAML")
     parser.add_argument("--song", type=str, help="Song name to load")
     parser.add_argument("--list-songs", action="store_true", help="List available songs")
     parser.add_argument("--list-devices", action="store_true", help="List audio devices")
+    parser.add_argument("--version", action="version", version=f"AutoLyrics {__version__}")
     args = parser.parse_args()
+    print(BANNER)
 
     config = load_config(args.config)
 
