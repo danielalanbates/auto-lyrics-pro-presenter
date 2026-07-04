@@ -155,10 +155,14 @@ def live_pp_test(track: str) -> dict:
                 logger.error(f"PP shows {bridge.live_slide_index()}, expected {sug.index}")
 
     capture = AudioCapture(config.audio, callback=on_audio)
-    dur = wav_play(track)
-    player = "sounddevice" if dur is not None else None
-    if player is None:
+    # Original-quality playback: a replayed mic recording is a 3rd-generation
+    # copy that whisper mis-hears; Apple Music is what the deck was built from.
+    try:
         dur = music_play(track)
+        player = None
+    except RuntimeError:
+        dur = wav_play(track)
+        player = "sounddevice"
     logger.info(f"LIVE PP TEST '{track}' — {n_slides} slides, {dur:.0f}s")
     capture.start()
     t0 = time.time()

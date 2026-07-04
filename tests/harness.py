@@ -192,21 +192,6 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
         sf.write(wav_path, audio, SAMPLE_RATE)
         logger.info(f"Saved recording (RMS {float(np.sqrt((audio**2).mean())):.4f})")
 
-    # Live tests REPLAY the recording through the speakers, so the engine
-    # hears an acoustically degraded copy. Build the reference from that same
-    # degraded signal — a mic capture of the replay — or the deck's wording
-    # drifts from what the live pass will transcribe and matches decay.
-    replay_path = RECORDINGS_DIR / f"{s}-replay.wav"
-    if replay_path.exists():
-        logger.info(f"Using existing replay capture {replay_path.name}")
-        audio, _ = sf.read(replay_path, dtype="float32")
-    else:
-        logger.info(f"Capturing speaker replay of '{track}' for {dur:.0f}s ...")
-        wav_play(track)
-        audio = record(dur)
-        wav_stop()
-        sf.write(replay_path, audio, SAMPLE_RATE)
-        logger.info(f"Saved replay capture (RMS {float(np.sqrt((audio**2).mean())):.4f})")
 
     # Transcribe with the SAME windowed pipeline the live engine uses —
     # consistency between passes matters more than absolute accuracy.
@@ -339,10 +324,14 @@ def live_test(track: str) -> dict:
             engine.confirm_move(sug.index)
 
     capture = AudioCapture(config.audio, callback=on_audio)
-    dur = wav_play(track)
-    replay = dur is not None
-    if not replay:
+    # Play the ORIGINAL track: replaying the mic recording through speakers is
+    # a third-generation copy whisper can no longer transcribe faithfully.
+    try:
         dur = music_play(track)
+        replay = False
+    except RuntimeError:
+        dur = wav_play(track)
+        replay = True
     logger.info(f"LIVE TEST '{track}' — {n_slides} slides, {dur:.0f}s"
                 + (" (local replay)" if replay else " (Apple Music)"))
     capture.start()

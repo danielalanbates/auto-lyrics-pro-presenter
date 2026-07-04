@@ -19,12 +19,6 @@
       "slides": 17
     },
     {
-      "track": "For All My Days (Live at Camp)",
-      "slug": "for-all-my-days-live-at-camp",
-      "duration": 193.356,
-      "slides": 6
-    },
-    {
       "track": "Who You Say I Am (Live)",
       "slug": "who-you-say-i-am-live",
       "duration": 329.0799375,
@@ -59,6 +53,12 @@
       "slug": "freedom-feat-kim-walker-smith-live",
       "duration": 391.0499375,
       "slides": 31
+    },
+    {
+      "track": "For All My Days (Live at Camp)",
+      "slug": "for-all-my-days-live-at-camp",
+      "duration": 193.356002807617,
+      "slides": 21
     }
   ]
 }
