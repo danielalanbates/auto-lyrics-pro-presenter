@@ -2,13 +2,7 @@
   "for-all-my-days-live-at-camp": {
     "track": "For All My Days (Live at Camp)",
     "slides": 6,
-    "fired": [
-      0,
-      1,
-      2,
-      4,
-      5
-    ],
+    "fired": [],
     "perfect": false
   }
 }

@@ -176,6 +176,10 @@ class LyricEngine:
         threshold = m.confidence_threshold
         if best_idx > cur + 1 and cur >= 0:
             threshold += m.jump_margin
+        if cur == -1 and best_idx == 0:
+            # Song start: intros are the noisiest transcription window, and
+            # showing the first lyric slide is the lowest-risk move there is.
+            threshold -= 0.08
 
         if best_idx >= 0 and best_conf < threshold and best_conf >= m.soft_threshold:
             # Sub-threshold but plausible: fire anyway if the same candidate
@@ -189,8 +193,11 @@ class LyricEngine:
                 threshold = best_conf  # accept
         elif best_conf >= threshold:
             pass
-        else:
-            self._soft_idx, self._soft_hits = -1, 0
+        elif best_idx >= 0 and best_idx != self._soft_idx:
+            # A different candidate won — restart accumulation on it. A merely
+            # quiet/noisy window (no candidate) leaves the streak intact so a
+            # single bad transcription can't erase progress toward a soft fire.
+            self._soft_idx, self._soft_hits = best_idx, 0
 
         if best_idx < 0 or best_conf < threshold:
             return MatchResult(confidence=best_conf)
