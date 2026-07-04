@@ -43,12 +43,6 @@
       "slides": 18
     },
     {
-      "track": "For All My Days (Live at Camp)",
-      "slug": "for-all-my-days-live-at-camp",
-      "duration": 193.356,
-      "slides": 6
-    },
-    {
       "track": "The God You Are (Live)",
       "slug": "the-god-you-are-live",
       "duration": 255.179,
@@ -59,6 +53,12 @@
       "slug": "abundantly-more-feat-clay-finnesand-live-at-decatur-city",
       "duration": 268.5639375,
       "slides": 17
+    },
+    {
+      "track": "For All My Days (Live at Camp)",
+      "slug": "for-all-my-days-live-at-camp",
+      "duration": 193.356,
+      "slides": 6
     }
   ]
 }

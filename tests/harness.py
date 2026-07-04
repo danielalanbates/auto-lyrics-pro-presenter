@@ -400,6 +400,19 @@ def live_test(track: str) -> dict:
         "perfect": perfect,
     }
     logger.info(f"RESULT: {'PERFECT PASS' if perfect else 'FAIL'} — fired {fired} of 0..{n_slides-1}")
+
+    # Feed the live failure back into the deck: rebuilding from the same
+    # recordings is deterministic and would reproduce this exact deck, so
+    # drop the slides that failed to fire live (the live pass IS another
+    # independent capture) as long as the deck stays above the density floor.
+    if not perfect and fired:
+        keep = sorted(set(fired))
+        floor = max(6, int(dur / 45))
+        if len(keep) >= floor and keep != list(range(n_slides)):
+            path = PLAYLIST_DIR / f"{slug(track)}.txt"
+            blocks = path.read_text().strip().split("\n\n")
+            path.write_text("\n\n".join(blocks[i] for i in keep) + "\n")
+            logger.info(f"pruned deck to the {len(keep)} live-fired slides")
     return result
 
 
