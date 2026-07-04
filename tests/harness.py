@@ -249,6 +249,33 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
             break
         slides = [slides[i] for i in sorted(keep)] or slides[:1]
 
+    # Cross-capture validation: the deck must also fire end-to-end on an
+    # INDEPENDENT capture it was not built from. Same-capture simulation can't
+    # catch slides (ad-libs, outros, crowd noise) whose transcription is
+    # unstable across performances of the acoustic chain — the exact slides
+    # that stall live passes mid-song.
+    b_path = RECORDINGS_DIR / f"{s}-b.wav"
+    if b_path.exists():
+        audio_b, _ = sf.read(b_path, dtype="float32")
+    else:
+        dur_b = min(music_play(track), max_seconds)
+        logger.info(f"Recording independent validation capture for {dur_b:.0f}s ...")
+        audio_b = record(dur_b)
+        music_stop()
+        sf.write(b_path, audio_b, SAMPLE_RATE)
+    for round_ in range(4):
+        lyrics = "\n\n".join("\n".join(sl) for sl in slides)
+        fired = simulate(lyrics, audio_b, 0.0)
+        want = list(range(len(slides)))
+        logger.info(f"cross-capture round {round_}: fired {len(fired)}/{len(slides)}")
+        if fired == want:
+            break
+        keep = sorted(set(fired))
+        if len(keep) < floor and len(slides) >= floor:
+            logger.warning(f"cross-capture prune would drop below floor ({len(keep)}<{floor}); keeping deck")
+            break
+        slides = [slides[i] for i in keep] or slides[:1]
+
     lyrics_path = PLAYLIST_DIR / f"{s}.txt"
     lyrics_path.write_text("\n\n".join("\n".join(sl) for sl in slides) + "\n")
     logger.info(f"Wrote {len(slides)} slides → {lyrics_path.name}")
