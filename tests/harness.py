@@ -146,8 +146,13 @@ def record(duration: float) -> np.ndarray:
     """Record the mic for `duration` seconds while the track plays."""
     import sounddevice as sd
     import threading
-    frames = int(duration * SAMPLE_RATE)
-    rec = sd.rec(frames, samplerate=SAMPLE_RATE, channels=1, dtype="float32", device=mic_device())
+    # Capture at the device's native rate and decimate: CoreAudio's resampled
+    # input streams (e.g. 16 kHz on a 48 kHz mic) return corrupt buffers.
+    dev = mic_device()
+    native = int(sd.query_devices(dev)["default_samplerate"])
+    dec = max(1, round(native / SAMPLE_RATE))
+    frames = int(duration * SAMPLE_RATE) * dec
+    rec = sd.rec(frames, samplerate=SAMPLE_RATE * dec, channels=1, dtype="float32", device=dev)
     done = threading.Event()
 
     def enforce():  # keep audio on the speakers for the whole recording
@@ -158,7 +163,10 @@ def record(duration: float) -> np.ndarray:
     t.start()
     sd.wait()
     done.set()
-    return rec[:, 0]
+    mono = rec[:, 0]
+    if dec > 1:
+        mono = mono[:len(mono) - len(mono) % dec].reshape(-1, dec).mean(axis=1)
+    return np.nan_to_num(mono)
 
 
 # ---------------------------------------------------------------- pass A
@@ -183,6 +191,22 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
         music_stop()
         sf.write(wav_path, audio, SAMPLE_RATE)
         logger.info(f"Saved recording (RMS {float(np.sqrt((audio**2).mean())):.4f})")
+
+    # Live tests REPLAY the recording through the speakers, so the engine
+    # hears an acoustically degraded copy. Build the reference from that same
+    # degraded signal — a mic capture of the replay — or the deck's wording
+    # drifts from what the live pass will transcribe and matches decay.
+    replay_path = RECORDINGS_DIR / f"{s}-replay.wav"
+    if replay_path.exists():
+        logger.info(f"Using existing replay capture {replay_path.name}")
+        audio, _ = sf.read(replay_path, dtype="float32")
+    else:
+        logger.info(f"Capturing speaker replay of '{track}' for {dur:.0f}s ...")
+        wav_play(track)
+        audio = record(dur)
+        wav_stop()
+        sf.write(replay_path, audio, SAMPLE_RATE)
+        logger.info(f"Saved replay capture (RMS {float(np.sqrt((audio**2).mean())):.4f})")
 
     # Transcribe with the SAME windowed pipeline the live engine uses —
     # consistency between passes matters more than absolute accuracy.
