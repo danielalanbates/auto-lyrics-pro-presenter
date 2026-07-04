@@ -43,10 +43,17 @@ def slug(name: str) -> str:
 
 
 def osa(script: str) -> str:
-    r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-    if r.returncode != 0:
-        raise RuntimeError(f"osascript failed: {r.stderr.strip()}")
-    return r.stdout.strip()
+    # Retry: osascript throws bogus "syntax errors" (-2740) when the GUI
+    # session is briefly locked/absent (lid-logout, post-panic reboot) —
+    # the script text is fine, the Apple Event context isn't.
+    last = ""
+    for attempt in range(4):
+        r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+        if r.returncode == 0:
+            return r.stdout.strip()
+        last = r.stderr.strip()
+        time.sleep(5 * (attempt + 1))
+    raise RuntimeError(f"osascript failed: {last}")
 
 
 def mic_device() -> int:

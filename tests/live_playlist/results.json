@@ -2,7 +2,69 @@
   "for-all-my-days-live-at-camp": {
     "track": "For All My Days (Live at Camp)",
     "slides": 6,
+    "fired": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "perfect": true
+  },
+  "the-god-you-are-live": {
+    "track": "The God You Are (Live)",
+    "slides": 8,
+    "fired": [
+      0,
+      1,
+      2
+    ],
+    "perfect": false
+  },
+  "abundantly-more-feat-clay-finnesand-live-at-decatur-city": {
+    "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
+    "slides": 8,
+    "fired": [
+      0,
+      1
+    ],
+    "perfect": false
+  },
+  "glory-honor-power-live": {
+    "track": "Glory, Honor, Power (Live)",
+    "slides": 12,
     "fired": [],
+    "perfect": false
+  },
+  "first-love-live": {
+    "track": "First Love (Live)",
+    "error": "osascript failed: 4:17: syntax error: A identifier can\u2019t go after this identifier. (-2740)",
+    "perfect": false
+  },
+  "who-you-say-i-am-live": {
+    "track": "Who You Say I Am (Live)",
+    "error": "osascript failed: 4:17: syntax error: A identifier can\u2019t go after this identifier. (-2740)",
+    "perfect": false
+  },
+  "holy-ground-feat-melodie-malone-live": {
+    "track": "Holy Ground (feat. Melodie Malone) [Live]",
+    "error": "osascript failed: 4:17: syntax error: A identifier can\u2019t go after this identifier. (-2740)",
+    "perfect": false
+  },
+  "one-live-at-church": {
+    "track": "One (Live At Church)",
+    "error": "osascript failed: 4:17: syntax error: A identifier can\u2019t go after this identifier. (-2740)",
+    "perfect": false
+  },
+  "know-be-still-live-in-anaheim-california": {
+    "track": "Know (Be Still) [Live in Anaheim, California]",
+    "error": "osascript failed: 4:17: syntax error: A identifier can\u2019t go after this identifier. (-2740)",
+    "perfect": false
+  },
+  "freedom-feat-kim-walker-smith-live": {
+    "track": "Freedom (feat. Kim Walker-Smith) [Live]",
+    "error": "osascript failed: 4:17: syntax error: A identifier can\u2019t go after this identifier. (-2740)",
     "perfect": false
   }
 }
