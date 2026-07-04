@@ -72,7 +72,7 @@ class LyricEngine:
                 compute_type=self.whisper_config.compute_type,
                 # Cap worker threads: an uncapped CTranslate2 saturates every
                 # core, starving coreaudiod's real-time threads → audible static.
-                cpu_threads=2,
+                cpu_threads=4,
                 num_workers=1,
             )
             logger.info(f"faster-whisper model loaded: {self.whisper_config.model_size}")

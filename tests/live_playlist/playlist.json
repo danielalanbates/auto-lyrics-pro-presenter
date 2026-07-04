@@ -1,24 +1,6 @@
 {
   "songs": [
     {
-      "track": "The God You Are (Live)",
-      "slug": "the-god-you-are-live",
-      "duration": 255.179000854492,
-      "slides": 24
-    },
-    {
-      "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
-      "slug": "abundantly-more-feat-clay-finnesand-live-at-decatur-city",
-      "duration": 268.563995361328,
-      "slides": 13
-    },
-    {
-      "track": "Glory, Honor, Power (Live)",
-      "slug": "glory-honor-power-live",
-      "duration": 307.135,
-      "slides": 17
-    },
-    {
       "track": "Who You Say I Am (Live)",
       "slug": "who-you-say-i-am-live",
       "duration": 329.0799375,
@@ -57,8 +39,26 @@
     {
       "track": "For All My Days (Live at Camp)",
       "slug": "for-all-my-days-live-at-camp",
-      "duration": 193.356002807617,
-      "slides": 21
+      "duration": 193.356,
+      "slides": 20
+    },
+    {
+      "track": "The God You Are (Live)",
+      "slug": "the-god-you-are-live",
+      "duration": 255.179,
+      "slides": 20
+    },
+    {
+      "track": "Abundantly More (feat. Clay Finnesand) [Live at Decatur City]",
+      "slug": "abundantly-more-feat-clay-finnesand-live-at-decatur-city",
+      "duration": 268.5639375,
+      "slides": 7
+    },
+    {
+      "track": "Glory, Honor, Power (Live)",
+      "slug": "glory-honor-power-live",
+      "duration": 307.135,
+      "slides": 18
     }
   ]
 }

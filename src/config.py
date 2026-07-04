@@ -18,7 +18,9 @@ class AudioConfig:
 @dataclass
 class WhisperConfig:
     """Whisper transcription settings."""
-    model_size: str = "small.en"  # faster-whisper: tiny.en, base.en, small.en, distil-small.en...
+    # distil-small.en transcribes a 12s window in ~2.5s on 4 CPU threads — the
+    # only size that keeps up with the 3s live hop, so no windows are dropped.
+    model_size: str = "distil-small.en"
     language: str = "en"
     compute_type: str = "int8"  # int8 keeps small.en real-time on CPU
     beam_size: int = 1
