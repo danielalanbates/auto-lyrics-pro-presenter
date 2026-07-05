@@ -29,7 +29,27 @@ SONGS = [
 RESULTS = PLAYLIST_DIR / "results.json"
 
 
+def preflight():
+    """Fail fast with a remedy if the audio stack is broken (it happens)."""
+    import subprocess
+    probe = "import sounddevice as sd\nwith sd.InputStream(channels=1): pass\nprint('ok')"
+    try:
+        r = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, timeout=20)
+        if "ok" in r.stdout:
+            return
+        detail = (r.stderr or "").strip().splitlines()[-1:] or ["unknown error"]
+        detail = detail[0]
+    except subprocess.TimeoutExpired:
+        detail = "opening the input stream hangs"
+    logger.error(
+        f"Microphone input is broken ({detail}). CoreAudio is likely wedged — "
+        "run 'sudo killall coreaudiod' or reboot, then re-run."
+    )
+    sys.exit(2)
+
+
 def main():
+    preflight()
     tests_only = "--tests-only" in sys.argv
     results = json.loads(RESULTS.read_text()) if RESULTS.exists() else {}
     for track in SONGS:

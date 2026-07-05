@@ -7,12 +7,6 @@
       "slides": 14
     },
     {
-      "track": "First Love (Live)",
-      "slug": "first-love-live",
-      "duration": 325.0,
-      "slides": 16
-    },
-    {
       "track": "Holy Ground (feat. Melodie Malone) [Live]",
       "slug": "holy-ground-feat-melodie-malone-live",
       "duration": 328.9729375,
@@ -59,6 +53,12 @@
       "slug": "glory-honor-power-live",
       "duration": 307.135,
       "slides": 12
+    },
+    {
+      "track": "First Love (Live)",
+      "slug": "first-love-live",
+      "duration": 325.0,
+      "slides": 8
     }
   ]
 }
