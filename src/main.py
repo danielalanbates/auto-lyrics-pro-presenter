@@ -23,7 +23,6 @@ from .config import AppConfig, load_config
 from .lyric_engine import LyricEngine
 from .propresenter_bridge import ProPresenterBridge
 from .song_loader import SongLoader
-from .vocal_isolation import VocalIsolator
 
 
 class AutoLyricsApp:
@@ -35,8 +34,6 @@ class AutoLyricsApp:
 
         # Initialize components
         self.song_loader = SongLoader(config.songs_directory)
-        # Spectral gating: real-time-safe on CPU (demucs is far too slow live).
-        self.vocal_isolator = VocalIsolator(backend="spectral")
         self.lyric_engine = LyricEngine(config.whisper, config.matching)
         self.pp_bridge = ProPresenterBridge(config.propresenter)
         self.audio_capture = AudioCapture(config.audio, callback=self._on_audio)
@@ -105,11 +102,11 @@ class AutoLyricsApp:
         if not self._running:
             return
 
-        # Step 1: Isolate vocals
-        vocals = self.vocal_isolator.isolate_vocals(audio, sample_rate)
-
-        # Step 2: Transcribe
-        text = self.lyric_engine.transcribe(vocals, sample_rate)
+        # Transcribe the raw mic buffer — the SAME path the reference decks
+        # were built with and the acoustic test suite verifies. (Bandpass
+        # "vocal isolation" was removed from the hot path: it made live audio
+        # differ from what the decks were tuned on, hurting match accuracy.)
+        text = self.lyric_engine.transcribe(audio, sample_rate)
         if not text:
             return
 

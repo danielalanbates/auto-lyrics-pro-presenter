@@ -15,16 +15,16 @@ Every weekend a volunteer sits at a computer pressing the space bar in time with
 ## How it works
 
 ```
-┌─────────────────┐   ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────────┐
-│  Audio Capture  │──▶│  Vocal Isolation │──▶│   Lyric Engine   │──▶│  ProPresenter Bridge │
-│  (macOS mic)    │   │ (spectral gating)│   │ (faster-whisper) │   │  (HTTP API v1)       │
-└─────────────────┘   └──────────────────┘   └──────────────────┘   └──────────────────────┘
+┌─────────────────┐   ┌──────────────────┐   ┌──────────────────────┐
+│  Audio Capture  │──▶│   Lyric Engine   │──▶│  ProPresenter Bridge │
+│  (macOS mic)    │   │ (faster-whisper) │   │  (HTTP API v1)       │
+└─────────────────┘   └──────────────────┘   └──────────────────────┘
 ```
 
 | Module | Purpose |
 |--------|---------|
 | `src/audio_capture.py` | Live audio input from the mic (sounddevice), captured at the device's native rate and decimated to 16 kHz |
-| `src/vocal_isolation.py` | Real-time-safe spectral gating to reduce music bleed |
+| `src/vocal_isolation.py` | Optional offline vocal-separation experiments — not in the live path: decks are built from raw mic audio, so live transcription uses the same raw audio |
 | `src/lyric_engine.py` | Windowed faster-whisper transcription + slide-based matching with auto-fire, forward-only bias, jump penalties, and soft-hit confirmation |
 | `src/propresenter_bridge.py` | ProPresenter 7 HTTP API: port auto-discovery, slide triggers, and state read-back |
 | `src/pro_export.py` | Exports a lyric deck as a native `.pro` presentation that ProPresenter indexes automatically |

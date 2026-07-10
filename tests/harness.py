@@ -265,10 +265,19 @@ def build_reference(track: str, max_seconds: float = 600) -> Path:
     if b_path.exists():
         audio_b, _ = sf.read(b_path, dtype="float32")
     else:
-        dur_b = min(music_play(track), max_seconds)
+        # Local-file songs (no Music track) validate against an acoustic
+        # replay of the source wav — same speakers→mic chain the live test uses.
+        try:
+            dur_b = min(music_play(track), max_seconds)
+            replay = False
+        except RuntimeError:
+            d = wav_play(track)
+            if d is None:
+                raise
+            dur_b, replay = min(d, max_seconds), True
         logger.info(f"Recording independent validation capture for {dur_b:.0f}s ...")
         audio_b = record(dur_b)
-        music_stop()
+        wav_stop() if replay else music_stop()
         sf.write(b_path, audio_b, SAMPLE_RATE)
     for round_ in range(4):
         lyrics = "\n\n".join("\n".join(sl) for sl in slides)
